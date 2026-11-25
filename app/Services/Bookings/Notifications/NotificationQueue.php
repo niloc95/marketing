@@ -4,9 +4,6 @@ namespace App\Services\Bookings\Notifications;
 
 use App\Models\Bookings\BookingAppointmentModel;
 use App\Models\Bookings\BookingNotificationQueueModel;
-use App\Models\Bookings\BookingProviderModel;
-use App\Models\Bookings\BookingStaffAssignmentModel;
-use App\Models\Bookings\BusinessMemberModel;
 use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\BookingSettings;
 use Config\BookingNotifications as Catalog;
@@ -194,35 +191,16 @@ class NotificationQueue
     }
 
     /**
-     * Active team members who work with this person: admins, the person's
-     * own account, and reception assigned to them. Each gets the notice;
-     * the flag says whether they also asked for the email (Email me too).
+     * Who gets a notice for this person's bookings: each member's own
+     * "Gets notices for" ticks (T36, TeamCover), only where they may see
+     * those bookings. The flag says whether they also asked for the email
+     * (Email me too).
      *
      * @return array<int,bool> member id => wants the email
      */
     public function teamFor(int $providerId): array
     {
-        $members = BusinessMemberModel::forBusiness($this->listingId)
-            ->where('status', BusinessMemberModel::STATUS_ACTIVE)->findAll();
-        if ($members === []) {
-            return [];
-        }
-        $provider = BookingProviderModel::forBusiness($this->listingId)->find($providerId);
-        $assigned = array_map('intval', array_column(
-            BookingStaffAssignmentModel::forBusiness($this->listingId)->where('provider_id', $providerId)->findAll(),
-            'member_id',
-        ));
-        $out = [];
-        foreach ($members as $m) {
-            $id = (int) $m['id'];
-            if ($m['role'] === \Config\BookingPermissions::ADMIN
-                || (is_array($provider) && (int) ($provider['member_id'] ?? 0) === $id)
-                || in_array($id, $assigned, true)) {
-                $out[$id] = (int) $m['notify_on_appointments'] === 1;
-            }
-        }
-
-        return $out;
+        return (new \App\Services\Bookings\TeamCover($this->listingId))->recipients($providerId);
     }
 
     private function marker(string $event, array $appointment): ?string

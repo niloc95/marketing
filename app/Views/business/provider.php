@@ -13,9 +13,9 @@
  * @var array<int,string>            $locations
  * @var list<array<string,mixed>>    $services
  * @var list<int>                    $offered
- * @var list<array<string,mixed>>    $staff
- * @var list<int>                    $assigned
- * @var list<array<string,mixed>>    $members
+ * @var list<array<string,mixed>>    $members  everyone who signs in (admins only)
+ * @var array<string,mixed>|null     $access   their sign in, looks after and notices (T36)
+ * @var array<string,string>         $roleLabels
  * @var bool                         $isAdmin
  * @var array<int,string>            $weekdays
  * @var array<string,mixed>          $errors
@@ -65,27 +65,6 @@ $archived   = $provider['archived_at'] !== null;
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="service_ids[]" value="<?= (int) $s['id'] ?>"<?= in_array((int) $s['id'], $offered, true) ? ' checked' : '' ?>> <?= esc((string) $s['name']) ?></label>
             <?php endforeach ?>
         </fieldset>
-
-        <?php if ($isAdmin): ?>
-            <div class="field">
-                <label for="p-member">Signs in as</label>
-                <select id="p-member" name="member_id">
-                    <option value="0">Nobody</option>
-                    <?php foreach ($members as $m): ?>
-                        <option value="<?= (int) $m['id'] ?>"<?= (int) ($provider['member_id'] ?? 0) === (int) $m['id'] ? ' selected' : '' ?>><?= esc((string) ($m['account_name'] ?: $m['account_email'])) ?></option>
-                    <?php endforeach ?>
-                </select>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">The person who sees this calendar as their own.</p>
-            </div>
-            <?php if ($staff !== []): ?>
-                <fieldset class="field">
-                    <legend class="mb-1 font-semibold">Reception looking after their bookings</legend>
-                    <?php foreach ($staff as $m): ?>
-                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="staff_ids[]" value="<?= (int) $m['id'] ?>"<?= in_array((int) $m['id'], $assigned, true) ? ' checked' : '' ?>> <?= esc((string) ($m['account_name'] ?: $m['account_email'])) ?></label>
-                    <?php endforeach ?>
-                </fieldset>
-            <?php endif ?>
-        <?php endif ?>
 
         <button type="submit" class="btn btn-primary">Save</button>
     </form>
@@ -196,6 +175,50 @@ $archived   = $provider['archived_at'] !== null;
 </div>
 
 <?php if ($isAdmin): ?>
+    <?php // T36: who signs in as them, and what that sign in covers, in one place. ?>
+    <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <?php if ($access !== null): ?>
+            <?= view('business/_person_access', ['access' => $access, 'roleLabels' => $roleLabels], ['saveData' => false]) ?>
+        <?php else: ?>
+            <section class="form-card" id="access">
+                <h2 class="mb-1 section-title">Sign in</h2>
+                <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Nobody signs in as <?= esc((string) $provider['name']) ?>. Give them a sign in to see their own calendar and get notices.</p>
+                <form method="post" action="<?= base_url('business/team/' . $provider['id'] . '/sign-in') ?>">
+                    <?= csrf_field() ?>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="field"><label for="si-email">Their email</label><input id="si-email" type="email" name="email" required autocomplete="off"></div>
+                        <div class="field">
+                            <label for="si-role">Role</label>
+                            <select id="si-role" name="role">
+                                <?php foreach ($roleLabels as $role => $roleLabel): ?>
+                                    <option value="<?= $role ?>"<?= $role === 'provider' ? ' selected' : '' ?>><?= esc($roleLabel) ?></option>
+                                <?php endforeach ?>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-xs">Send an invitation</button>
+                </form>
+                <?php $free = array_values(array_filter($members, static fn (array $m): bool => $m['role'] !== 'staff')); ?>
+                <?php if ($free !== []): ?>
+                    <form method="post" action="<?= base_url('business/team/' . $provider['id'] . '/sign-in') ?>" class="mt-5">
+                        <?= csrf_field() ?>
+                        <div class="field">
+                            <label for="si-member">Or someone who already signs in</label>
+                            <div class="flex gap-2">
+                                <select id="si-member" name="member_id">
+                                    <?php foreach ($free as $m): ?>
+                                        <option value="<?= (int) $m['id'] ?>"><?= esc((string) ($m['account_name'] ?: $m['account_email'])) ?></option>
+                                    <?php endforeach ?>
+                                </select>
+                                <button type="submit" class="btn btn-ghost btn-xs">Link</button>
+                            </div>
+                        </div>
+                    </form>
+                <?php endif ?>
+            </section>
+        <?php endif ?>
+    </div>
+
     <form method="post" action="<?= base_url('business/team/' . $provider['id'] . '/archive') ?>" class="mt-6">
         <?= csrf_field() ?>
         <?php if ($archived): ?><input type="hidden" name="restore" value="1"><?php endif ?>

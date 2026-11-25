@@ -211,7 +211,7 @@ final class BookingCatalogueTest extends CIUnitTestCase
 
         $this->signedIn($ownerId, $id)->post('business/team/invite', [
             csrf_token() => csrf_hash(), 'name' => 'Lerato', 'email' => 'lerato@example.test', 'role' => 'provider', 'provider_id' => $providerId,
-        ])->assertRedirectTo(base_url('business/team#access'));
+        ])->assertRedirectTo(base_url('business/team#people'));
 
         $this->assertCount(1, $this->sent);
         preg_match('#business/invite/([a-f0-9]{64})#', html_entity_decode((string) $this->sent[0]['body']), $m);

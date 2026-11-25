@@ -26,6 +26,28 @@
         </form>
     </div>
 
+    <div class="form-card" id="email">
+        <h2 class="mb-1.5 section-title">Change your email</h2>
+        <?php if (! empty($account['pending_email']) && strtotime((string) $account['email_change_expires'] . ' UTC') > time()): ?>
+            <p class="mb-3 text-sm"><span class="pill pill-pending">Waiting</span> We sent a link to <?= esc((string) $account['pending_email']) ?>. Until you open it, you sign in with <?= esc((string) $account['email']) ?>.</p>
+        <?php endif ?>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">You sign in with this email at every business you are part of. We email a link to the new address to confirm it.</p>
+        <form method="post" action="<?= base_url('business/account/email') ?>">
+            <?= csrf_field() ?>
+            <div class="field">
+                <label for="biz-email">New email</label>
+                <input id="biz-email" type="email" name="email" autocomplete="email" maxlength="254" required>
+            </div>
+            <?php if ($hasPassword): ?>
+                <div class="field">
+                    <label for="biz-email-pw">Your password</label>
+                    <input id="biz-email-pw" type="password" name="current_password" autocomplete="current-password" required>
+                </div>
+            <?php endif ?>
+            <button type="submit" class="btn btn-ghost">Send the link</button>
+        </form>
+    </div>
+
     <div class="form-card" id="password">
         <h2 class="mb-1.5 section-title"><?= $hasPassword ? 'Change your password' : 'Choose a password' ?></h2>
         <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">At least <?= $minLength ?> characters.</p>

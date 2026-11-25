@@ -114,6 +114,10 @@ the reference app's "Prepare patient file" was medical only.
 | "Blocked periods" | "Closed days" |
 | "Provider schedule" | "Working hours" |
 | "Self-service" | "Change or cancel online" |
+| "Staff assignments", "Assigned providers" | "Looks after" (T36) |
+| "Notification recipients", "Subscribe" | "Gets notices for" (T36) |
+| "Transfer", "Reassign" | "Hand over to" (T36) |
+| "No user account" | "Not signing in" (T36) |
 
 The full list is built in each phase as screens are ported. A test in Phase 1
 (`BookingCopyTest`) scans `app/Views/business/`, `app/Views/emails/booking-*` and the

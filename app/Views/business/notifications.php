@@ -15,6 +15,7 @@
  * @var string                                 $show   all or unread
  * @var int                                    $total
  * @var int                                    $unread
+ * @var array<string,mixed> $cover whose notices they get (T36)
  * @var bool                                   $notify
  * @var string                                 $tz
  * @var bool                                   $canLog
@@ -120,6 +121,18 @@ $filterUrl = static fn (string $s): string => base_url('business/notifications' 
             <?= csrf_field() ?>
             <h2 class="section-title">Email me too</h2>
             <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="notify" value="1" class="mt-0.5"<?= $notify ? ' checked' : '' ?>> Email me when a customer books, moves or cancels online</label>
+            <?php // Whose bookings they hear about (T36): only people whose bookings they may see. ?>
+            <?php if ($cover['choices'] !== []): ?>
+                <input type="hidden" name="routes_shown" value="1">
+                <h3 class="mt-4 subsection-title" id="mine">Get notices for</h3>
+                <?php if ($cover['isAdmin']): ?>
+                    <label class="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="all" value="1"<?= $cover['all'] ? ' checked' : '' ?>> Everyone</label>
+                <?php endif ?>
+                <?php foreach ($cover['choices'] as $pid => $pname): ?>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="provider_ids[]" value="<?= (int) $pid ?>"<?= in_array((int) $pid, $cover['mine'], true) ? ' checked' : '' ?>> <?= esc((string) $pname) ?></label>
+                <?php endforeach ?>
+                <p class="notice-hint">Untick yourself to leave your notices to reception.</p>
+            <?php endif ?>
             <?php if ($teamOff !== []): ?>
                 <?php
                 $all   = count($teamOff) === count(\Config\BookingNotifications::TEAM_EVENTS);

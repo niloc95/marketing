@@ -8,6 +8,8 @@
  * @var list<array<string,mixed>>           $profileTeam  profile cards nobody in bookings is yet
  * @var array<string,string>                $roleLabels
  * @var int                                 $myMemberId
+ * @var list<array<string,mixed>>           $people  everyone in one list (admins, T36): provider, member, looks, notices, all, pending, url
+ * @var array<string,mixed>                 $cover   the Who covers whom grid (admins)
  */
 use App\Services\Bookings\TeamService;
 
@@ -19,6 +21,7 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 <?php if (! empty($profileTabs)): ?>
     <?= view('layouts/_profile_tabs', ['tabs' => $profileTabs, 'label' => 'Profile sections'], ['saveData' => false]) ?>
 <?php endif ?>
+<?php if (! $canAdd): ?>
 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The people customers can book, and when they work.</p>
 
 <div class="mt-5 space-y-2">
@@ -40,15 +43,19 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     <?php endforeach ?>
 </div>
 
-<?php if ($canAdd): ?>
-    <?php // One person, one record (T31): adding someone here adds their profile team card too. ?>
-    <form method="post" action="<?= base_url('business/team') ?>" class="form-card mt-4">
+<?php else: ?>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Everyone in your practice or business: who customers book, who signs in, who reception looks after and who gets notices.</p>
+
+    <?= view('business/_team_people', ['people' => $people, 'hours' => $hours, 'hoursChanged' => $hoursChanged, 'roleLabels' => $roleLabels, 'myMemberId' => $myMemberId], ['saveData' => false]) ?>
+
+    <?php // One person, one record (T31): adding someone who takes bookings adds their profile team card too. ?>
+    <form method="post" action="<?= base_url('business/team') ?>" class="form-card mt-6" id="add">
         <?= csrf_field() ?>
         <h2 class="mb-3 section-title">Add a person</h2>
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="field"><label for="prov-name">Name</label><input id="prov-name" type="text" name="name" maxlength="150" required></div>
-            <div class="field"><label for="prov-role">Position <span class="font-normal text-slate-500">(optional)</span></label><input id="prov-role" type="text" name="role" maxlength="120" placeholder="e.g. Senior stylist"></div>
-            <div class="field"><label for="prov-email">Email <span class="font-normal text-slate-500">(optional)</span></label><input id="prov-email" type="email" name="email" autocomplete="off"></div>
+            <div class="field"><label for="prov-role">Position <span class="font-normal text-slate-500">(optional)</span></label><input id="prov-role" type="text" name="role" maxlength="120" placeholder="e.g. Receptionist, Dentist"></div>
+            <div class="field"><label for="prov-email">Email <span class="font-normal text-slate-500">(to sign in)</span></label><input id="prov-email" type="email" name="email" autocomplete="off"></div>
             <div class="field">
                 <label for="prov-member-role">They sign in as</label>
                 <select id="prov-member-role" name="member_role">
@@ -58,9 +65,9 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                 </select>
             </div>
         </div>
-        <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="bookable" value="1" checked> Customers can book them online</label>
+        <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="bookable" value="1" checked> Customers book them (they get hours, services and a calendar)</label>
         <label class="mb-2 flex items-center gap-2 text-sm"><input type="checkbox" name="show_on_profile" value="1"> Show on my profile</label>
-        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">With an email, we send them a link to set their own password, valid for <?= TeamService::INVITE_DAYS ?> days. Add their photo and qualifications on the next page.</p>
+        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Reception or a practice manager: untick &ldquo;Customers book them&rdquo; and give their email. With an email, we send them a link to set their own password, valid for <?= TeamService::INVITE_DAYS ?> days.</p>
         <button type="submit" class="btn btn-primary">Add</button>
     </form>
 
@@ -86,73 +93,8 @@ $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         </section>
     <?php endif ?>
 
-    <section class="mt-8" id="access">
-        <h2 class="section-title">Who can sign in</h2>
-        <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Admins manage everything. Team members see their own bookings. Reception books for the people they are assigned to.</p>
-        <div class="table-scroll">
-            <table class="table">
-                <thead><tr><th>Person</th><th>Role</th><th></th></tr></thead>
-                <tbody>
-                    <?php foreach ($members as $m): ?>
-                        <tr>
-                            <td>
-                                <span class="block font-semibold"><?= esc((string) ($m['account_name'] ?: $m['account_email'])) ?></span>
-                                <span class="text-xs text-slate-500 dark:text-slate-400"><?= esc((string) $m['account_email']) ?></span>
-                                <?php if ($m['status'] === 'invited'): ?><span class="pill pill-pending">Invited</span><?php endif ?>
-                            </td>
-                            <td>
-                                <form method="post" action="<?= base_url('business/team/members/' . $m['id'] . '/role') ?>" class="flex gap-2">
-                                    <?= csrf_field() ?>
-                                    <select name="role" aria-label="Role">
-                                        <?php foreach ($roleLabels as $role => $label): ?>
-                                            <option value="<?= $role ?>"<?= $m['role'] === $role ? ' selected' : '' ?>><?= esc($label) ?></option>
-                                        <?php endforeach ?>
-                                    </select>
-                                    <button type="submit" class="btn btn-ghost btn-xs">Change</button>
-                                </form>
-                            </td>
-                            <td>
-                                <?php if ((int) $m['id'] !== $myMemberId): ?>
-                                    <form method="post" action="<?= base_url('business/team/members/' . $m['id'] . '/remove') ?>">
-                                        <?= csrf_field() ?>
-                                        <button type="submit" class="btn btn-ghost btn-xs">Remove</button>
-                                    </form>
-                                <?php endif ?>
-                            </td>
-                        </tr>
-                    <?php endforeach ?>
-                </tbody>
-            </table>
-        </div>
 
-        <form method="post" action="<?= base_url('business/team/invite') ?>" class="form-card mt-4">
-            <?= csrf_field() ?>
-            <h3 class="mb-3 subsection-title">Invite someone</h3>
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div class="field"><label for="inv-name">Name</label><input id="inv-name" type="text" name="name" maxlength="120" required></div>
-                <div class="field"><label for="inv-email">Email</label><input id="inv-email" type="email" name="email" required></div>
-                <div class="field">
-                    <label for="inv-role">Role</label>
-                    <select id="inv-role" name="role">
-                        <?php foreach ($roleLabels as $role => $label): ?>
-                            <option value="<?= $role ?>"<?= $role === 'provider' ? ' selected' : '' ?>><?= esc($label) ?></option>
-                        <?php endforeach ?>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="inv-provider">Customers book them as</label>
-                    <select id="inv-provider" name="provider_id">
-                        <option value="0">Nobody (they do not take bookings)</option>
-                        <?php foreach ($providers as $p): ?>
-                            <?php if ($p['archived_at'] === null): ?><option value="<?= (int) $p['id'] ?>"><?= esc((string) $p['name']) ?></option><?php endif ?>
-                        <?php endforeach ?>
-                    </select>
-                </div>
-            </div>
-            <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">We email them a link to join, valid for <?= TeamService::INVITE_DAYS ?> days.</p>
-            <button type="submit" class="btn btn-primary">Send invitation</button>
-        </form>
-    </section>
+    <?= view('business/_cover_grid', ['cover' => $cover, 'roleLabels' => $roleLabels], ['saveData' => false]) ?>
 <?php endif ?>
 <?= $this->endSection() ?>
 

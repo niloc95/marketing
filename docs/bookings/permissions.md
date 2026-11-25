@@ -34,7 +34,8 @@ gated only by route. It lives in `Config\BookingPermissions`.
 | Permission | admin | provider | staff |
 |---|---|---|---|
 | business settings, notification rules, templates, integrations | ✓ | | |
-| manage members (invite, roles, remove) | ✓ | staff only | |
+| manage members (invite, roles, email, remove, hand over, who covers whom) | ✓ | | |
+| choose whose notices they get (own ticks, on Notices) | ✓ any | own | looked after |
 | manage services and categories | ✓ | ✓ | |
 | manage providers, hours, blocked times | ✓ | own | |
 | view all appointments and calendars | ✓ | | |
@@ -49,8 +50,10 @@ gated only by route. It lives in `Config\BookingPermissions`.
 | audit log | ✓ | | |
 | turn bookings off | ✓ | | |
 
-"Own" means rows where `provider_id` is the member's provider. "Assigned" means providers
-in `xs_booking_staff_assignments` with status active. "Own customers" means customers with
+"Own" means rows where `provider_id` is the member's provider. "Assigned" ("looks after")
+means providers in `xs_booking_staff_assignments` (the table has no status column; a row
+is the assignment). Team notices (T36) follow `xs_booking_notice_routes` plus `notices_all`
+for admins, only within this scope (`TeamCover::recipients()`). "Own customers" means customers with
 an appointment for that provider (Bookings' `CustomerAppointmentService` rule).
 
 ## Where it is enforced

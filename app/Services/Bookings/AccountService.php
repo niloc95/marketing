@@ -181,6 +181,87 @@ class AccountService
     }
 
     /**
+     * A person changes their own sign in email (T36). The new address gets a
+     * link (hashed, one use, 24 hours); until it is opened the old email
+     * keeps working. An address that already has an account is refused, so
+     * two accounts never share one.
+     */
+    public function requestEmailChange(int $accountId, string $email): ?string
+    {
+        $account = $this->find($accountId);
+        $email   = AccountModel::normaliseEmail($email);
+        if ($account === null) {
+            return 'This account no longer exists.';
+        }
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 254) {
+            return 'Enter a valid email address.';
+        }
+        if ($email === (string) $account['email']) {
+            return 'That is already your email.';
+        }
+        if ($this->findByEmail($email) !== null) {
+            return 'That email already has a WebScheduler Local account. Use a different one, or ask an admin to change your email instead.';
+        }
+        if (service('throttler')->check('biz-email-change-' . $accountId, 3, HOUR) === false) {
+            return 'Too many tries. Try again in an hour.';
+        }
+
+        $token = TokenHash::mint();
+        $this->accounts->update($accountId, [
+            'pending_email'        => $email,
+            'email_change_hash'    => TokenHash::hash($token),
+            'email_change_expires' => gmdate('Y-m-d H:i:s', time() + DAY),
+        ]);
+        $body = view('emails/booking-email-change', [
+            'name'    => (string) $account['name'],
+            'url'     => site_url_for($this->siteFor($accountId), 'business/account/email/' . $token),
+            'confirm' => true,
+        ], ['saveData' => false]);
+        (new Mailer())->send($email, 'Confirm your new WebScheduler Local email', $body);
+
+        return null;
+    }
+
+    /**
+     * Open the link from the new address: the email changes, and the old
+     * address is told, in case it was not them.
+     *
+     * @return array<string,mixed>|null the account, with its new email
+     */
+    public function confirmEmailChange(string $token): ?array
+    {
+        if (! preg_match('/^[a-f0-9]{64}$/', $token)) {
+            return null;
+        }
+        $row = $this->accounts->where('email_change_hash', TokenHash::hash($token))->first();
+        if (! is_array($row) || $row['status'] !== AccountModel::STATUS_ACTIVE || (string) $row['pending_email'] === ''
+            || strtotime((string) $row['email_change_expires'] . ' UTC') < time()) {
+            return null;
+        }
+        $new = (string) $row['pending_email'];
+        $old = (string) $row['email'];
+        if ($this->findByEmail($new) !== null) {
+            $this->accounts->update((int) $row['id'], ['pending_email' => null, 'email_change_hash' => null, 'email_change_expires' => null]);
+
+            return null;
+        }
+        $this->accounts->update((int) $row['id'], [
+            'email' => $new, 'pending_email' => null, 'email_change_hash' => null, 'email_change_expires' => null,
+            // Links sent to the old address stop working.
+            'reset_token_hash' => null, 'reset_expires' => null, 'login_token_hash' => null, 'login_expires' => null,
+        ]);
+        $body = view('emails/booking-email-change', [
+            'name'    => (string) $row['name'],
+            'url'     => site_url_for($this->siteFor((int) $row['id']), 'business/password'),
+            'confirm' => false,
+            'newEmail' => $new,
+        ], ['saveData' => false]);
+        (new Mailer())->send($old, 'Your WebScheduler Local email was changed', $body);
+
+        return $this->find((int) $row['id']);
+    }
+
+    /**
      * Email a password reset link. Silent when the email has no account: the
      * caller shows the same message either way.
      */
