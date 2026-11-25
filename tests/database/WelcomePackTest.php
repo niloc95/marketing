@@ -197,6 +197,22 @@ final class WelcomePackTest extends CIUnitTestCase
         $this->assertNotNull($this->listings->find($this->clinic)['welcome_pack_sent_at']);
     }
 
+    public function testAdminPreviewsAPendingProfileButCannotSendIt(): void
+    {
+        $admin = ['dir_admin' => true, AdminFilter::SEEN_KEY => time()];
+        $this->listings->update($this->clinic, ['status' => 'pending', 'verified_until' => date('Y-m-d', strtotime('+1 month'))]);
+
+        $edit = $this->withSession($admin)->get('admin/edit/' . $this->clinic);
+        $this->assertStringContainsString('admin/welcome-pack/' . $this->clinic, (string) $edit->response()->getBody());
+
+        $preview = $this->withSession($admin)->get('admin/welcome-pack/' . $this->clinic);
+        $preview->assertStatus(200);
+        $this->assertStringStartsWith('%PDF', (string) $preview->response()->getBody());
+
+        $this->withSession($admin)->post('admin/welcome-pack/' . $this->clinic . '/send', [csrf_token() => csrf_hash()]);
+        $this->assertNull($this->listings->find($this->clinic)['welcome_pack_sent_at']);
+    }
+
     public function testTheCopyHasNoDashesOrHyphenatedWords(): void
     {
         $this->listings->update($this->clinic, ['verified_until' => date('Y-m-d', strtotime('+1 month'))]);

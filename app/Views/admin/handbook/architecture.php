@@ -36,7 +36,7 @@
             is the guard, claimed by a conditional update. Renewals never resend it.</li>
         <li>Ways in: <code>GET welcome-pack/{token}</code> (emailed, no sign in, 12 a minute per IP; a lapsed profile goes to
             its plan page), <code>GET business/welcome-pack</code> (owner, card on the Plan page), <code>GET admin/welcome-pack/{id}</code>
-            (preview any published profile) and <code>POST admin/welcome-pack/{id}/send</code> (new link, paid only). The response
+            (preview any profile, pending too) and <code>POST admin/welcome-pack/{id}/send</code> (new link, paid only). The response
             has the locked document CSP, nosniff, no-store and noindex.</li>
         <li>The site is the profile's, not the request's: copy reads the row's site and links use <code>listing_site_url()</code>.</li>
     </ul>

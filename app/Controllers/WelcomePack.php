@@ -14,7 +14,7 @@ use CodeIgniter\HTTP\ResponseInterface;
  * - GET welcome-pack/{token}: the emailed link. No sign in; the token is the
  *   key. A profile that is no longer Verified or Plus goes to its plan page.
  * - GET business/welcome-pack: the signed in owner (businessauth:owner).
- * - GET admin/welcome-pack/{id} (preview any published profile) and
+ * - GET admin/welcome-pack/{id} (preview any profile, pending too) and
  *   POST admin/welcome-pack/{id}/send (Verified or Plus only).
  *
  * Built on each request, never stored. The response carries the locked
@@ -65,9 +65,8 @@ class WelcomePack extends BaseController
     public function adminDownload(int $id)
     {
         $listing = (new DirectoryListingModel())->find($id);
-        if (! is_array($listing) || ($listing['status'] ?? '') !== 'published') {
-            return redirect()->to(base_url('admin/edit/' . $id))
-                ->with('error', 'Only a published profile has a welcome pack.');
+        if (! is_array($listing)) {
+            return redirect()->to(base_url('admin'))->with('error', 'Profile not found.');
         }
 
         return $this->pdf(new WelcomePackService(), $listing);

@@ -337,8 +337,8 @@ if (! is_array($old['hours'] ?? null)) {
             <?php endif; ?>
             <?php endif; ?>
 
-            <?php if (($listing['status'] ?? '') === 'published'): ?>
-                <?php $packReady = (new \App\Services\WelcomePackService())->available($listing); ?>
+            <?php $packReady = (new \App\Services\WelcomePackService())->available($listing); ?>
+            <?php $packPublished = ($listing['status'] ?? '') === 'published'; ?>
                 <div class="panel flex flex-wrap items-center justify-between gap-3">
                     <div class="text-sm text-slate-600 dark:text-slate-300">
                         <strong>Welcome pack.</strong>
@@ -346,7 +346,9 @@ if (! is_array($old['hours'] ?? null)) {
                         <?php if (! empty($listing['welcome_pack_sent_at'])): ?>
                             <br><span class="text-xs text-slate-500 dark:text-slate-400">Last emailed <?= esc(local_datetime($listing['welcome_pack_sent_at'])) ?>.</span>
                         <?php endif; ?>
-                        <?php if (! $packReady): ?>
+                        <?php if (! $packPublished): ?>
+                            <br><span class="text-xs text-slate-500 dark:text-slate-400">Preview only: the owner gets it once the profile is published with Verified or Plus.</span>
+                        <?php elseif (! $packReady): ?>
                             <br><span class="text-xs text-slate-500 dark:text-slate-400">Preview only: the owner gets it with Verified or Plus.</span>
                         <?php endif; ?>
                     </div>
@@ -359,7 +361,6 @@ if (! is_array($old['hours'] ?? null)) {
                         </form>
                     </div>
                 </div>
-            <?php endif; ?>
         <?php endif; ?>
     </div>
     <?php endforeach; ?>
