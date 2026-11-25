@@ -318,6 +318,29 @@ final class BookingDashboardTest extends CIUnitTestCase
         $this->assertStringContainsString('business/analytics', $this->signedIn()->get('business')->getBody(), 'In the menu');
     }
 
+    public function testDashboardCardsOpenAppointmentsInPlace(): void
+    {
+        $page = (string) $this->signedIn()->get('business')->getBody();
+        $this->assertStringContainsString('data-appt-host', $page);
+        $this->assertStringContainsString('data-cal-details', $page, 'the details dialog is on the dashboard');
+        $this->assertStringContainsString('data-d-calendar', $page);
+        $this->assertStringContainsString('class="dash-live" data-dash-today', $page, 'the refreshed block sits in the page grid');
+
+        // A card: opens in place, links to the calendar without script, and
+        // shows a pill only when the status is not the usual Confirmed.
+        $row = ['id' => 7, 'hash' => str_repeat('a', 32), 'start' => '2030-01-07T09:45:00+02:00', 'end' => '2030-01-07T10:00:00+02:00',
+            'customer_name' => 'Grace Mahlangu', 'service_name' => 'Cut', 'status' => 'confirmed'];
+        $card = view('business/_dash_appt', ['a' => $row, 'when' => '09:45', 'sub' => 'Cut', 'canOpen' => true, 'state' => 'now', 'compact' => true], ['saveData' => false]);
+        $this->assertStringContainsString('data-appt-open="7"', $card);
+        $this->assertStringContainsString('business/calendar?view=day&date=2030-01-07&open=' . str_repeat('a', 32), html_entity_decode($card));
+        $this->assertStringContainsString('<span>09:45</span><span>10:00</span>', $card);
+        $this->assertStringContainsString('dash-appt-now', $card);
+        $this->assertStringNotContainsString('appt-pill', $card);
+        $pending = view('business/_dash_appt', ['a' => ['status' => 'pending'] + $row, 'when' => 'Mon 7 Jan, 09:45', 'sub' => 'Cut with Sarah', 'canOpen' => false], ['saveData' => false]);
+        $this->assertStringContainsString('data-status="pending"', $pending);
+        $this->assertStringNotContainsString('data-appt-open', $pending, 'no dialog without appointments.manage');
+    }
+
     public function testReceptionHasNoAnalytics(): void
     {
         $desk = $this->reception();
