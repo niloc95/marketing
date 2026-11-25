@@ -516,6 +516,26 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $this->assertStringNotContainsString('data-customer-initial=', $page);
     }
 
+    public function testRescheduleOffersOnlyPeopleWhoGiveTheService(): void
+    {
+        // Colour is Sarah's alone; James does not give it (Grace Mahlangu, 25 Nov 2026:
+        // With said someone else while the times were the booked person's, and Move was refused).
+        $colour = (int) (new CatalogueService($this->listingId))->saveService(null, [
+            'name' => 'Colour', 'duration_min' => 60, 'price' => '400', 'delivery_modes' => ['onsite'], 'provider_ids' => [$this->sarah],
+        ], null)['id'];
+        $a = $this->book('09:00', ['first_name' => 'Grace', 'email' => 'grace@example.test', 'service_id' => $colour]);
+
+        $detail = $this->appointments()->detail((int) $a['id']);
+        $this->assertSame([$this->sarah], $detail['move_provider_ids']);
+        $cut = $this->appointments()->detail((int) $this->book('11:00', ['first_name' => 'Ben', 'email' => 'ben@example.test'])['id']);
+        $this->assertEqualsCanonicalizing([$this->sarah, $this->james], $cut['move_provider_ids'], 'Cut can go to either');
+        $this->assertSame([$this->sarah], $this->appointments([$this->sarah])->detail((int) $cut['id'])['move_provider_ids'], 'only people in the member\'s scope');
+
+        // Asking for James's times gives Sarah's, and says so.
+        $free = $this->appointments()->freeTimes((int) $a['id'], $this->james);
+        $this->assertSame($this->sarah, $free['provider_id']);
+    }
+
     public function testCustomerCardsShowNextAndLastWithinScope(): void
     {
         $this->book('09:00', ['first_name' => 'Alice', 'email' => 'alice@example.test']);

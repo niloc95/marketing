@@ -121,6 +121,13 @@ export function initDetails(root, scheduler) {
     // A passed time starts empty: the new one has to be chosen.
     q('[data-d-date]').value = current.upcoming ? dateOf(current.start) : '';
     q('[data-d-time]').value = current.upcoming ? hhmm(current.start) : '';
+    // With lists only people who give this service; anyone else is refused.
+    const allowed = (current.move_provider_ids || []).map(String);
+    q('[data-d-provider]').querySelectorAll('option').forEach((o) => {
+      const off = allowed.length > 0 && !allowed.includes(o.value) && o.value !== String(current.provider_id);
+      o.hidden = off;
+      o.disabled = off;
+    });
     q('[data-d-provider]').value = String(current.provider_id);
     chosen.hidden = true;
     show('move');
@@ -211,6 +218,8 @@ export function initDetails(root, scheduler) {
       return;
     }
     if (ask !== freeAsk) return; // A newer question was asked meanwhile.
+    // The times are always someone's: show whose, so Move sends the same person.
+    if (body.data.provider_id) q('[data-d-provider]').value = String(body.data.provider_id);
     timeButtons(nextBox, body.data.next, MSG.noFree);
     const showDay = params.has('date');
     dayHeading.hidden = !showDay;
