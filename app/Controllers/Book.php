@@ -49,6 +49,12 @@ class Book extends BaseController
 
     public const LINK_TOO_MANY = 'Too many tries with booking links from here. Please wait a little, or fill in your details below.';
 
+    /** Emails one address can be sent a day, whatever the IP (returningSend()). */
+    public const CODES_PER_ADDRESS_A_DAY = 6;
+
+    /** Code emails one business sends an hour, all addresses together. */
+    public const CODES_PER_BUSINESS_AN_HOUR = 60;
+
     /** Failed link uses allowed per IP an hour (returningRedeem()). */
     public const LINK_TRIES_PER_HOUR = 10;
 
@@ -299,9 +305,15 @@ class Book extends BaseController
         if ($email === null) {
             return redirect()->to($back)->with('returning_error', 'Please enter the email you booked with before.');
         }
+        // Per IP, per address (an hour and a day, whatever the IP, so a
+        // spread of addresses cannot flood one inbox) and per business (a
+        // sweep through one practice's patients). Checked in that order, so a
+        // refused request spends only the first bucket that said no.
         $throttler = service('throttler');
         if ($throttler->check('bookret-ip-' . md5((string) $this->request->getIPAddress()), 5, HOUR) === false
-            || $throttler->check('bookret-to-' . md5($email), 3, HOUR) === false) {
+            || $throttler->check('bookret-to-' . md5($email), 3, HOUR) === false
+            || $throttler->check('bookret-today-' . md5($email), self::CODES_PER_ADDRESS_A_DAY, DAY) === false
+            || $throttler->check('bookret-biz-' . (int) $listing['id'], self::CODES_PER_BUSINESS_AN_HOUR, HOUR) === false) {
             form_outcome('throttled');
 
             return redirect()->to($back)->with('returning_error', 'Too many codes asked for from here. Please wait a little, or fill in your details below.');

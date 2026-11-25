@@ -38,7 +38,7 @@ $error = is_string($returning['error']) ? $returning['error'] : '';
         </div>
     <?php elseif ($returning['pending'] !== null): ?>
         <h3 class="book-returning-title">Enter the 6 digit code we emailed you</h3>
-        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">If <?= esc($returning['pending']) ?> has booked here before, a code is on its way. It works for <?= (int) \App\Services\Bookings\ReturningPatientService::CODE_MINUTES ?> minutes. The email also has a link that brings you back to this time.</p>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">If <?= esc($returning['pending']) ?> has booked here before, an email is on its way with a code that works for <?= (int) \App\Services\Bookings\ReturningPatientService::CODE_MINUTES ?> minutes, and a link that brings you back to this time.</p>
         <form method="post" action="<?= base_url($base . '/returning/code') ?>" class="book-returning-form">
             <?= $fields() ?>
             <label for="returning-code" class="sr-only">Code</label>

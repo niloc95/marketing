@@ -27,7 +27,21 @@ use DateTimeImmutable;
  *   medical information.
  * - **Five wrong codes and the code is dead**, counted on the row
  *   (login_tries) and by the controller in the session, so neither a new
- *   session nor a new device gets more tries.
+ *   session nor a new device gets more tries. The link from the same email
+ *   keeps working: only the inbox owner has it.
+ * - **Wrong codes add up per patient, whatever the IP** (login_failures,
+ *   login_failed_at; security review 25 Nov 2026). From the 5th on, each
+ *   wrong code pauses codes from that moment (COOLDOWNS): 15 minutes for the
+ *   5th to 9th, an hour for the 10th to 14th, 4 hours for the 15th to 19th,
+ *   a day from the 20th. While paused a request still sends the email, with
+ *   the link only, and a typed code is refused without counting. Never permanent: the count
+ *   is forgotten FAILURE_MEMORY_HOURS after the last wrong code, and any
+ *   success (code or link) clears it. A stranger can pause codes for a
+ *   patient, never stop them booking: the link still works and the form
+ *   can always be filled in by hand.
+ * - **Emails are spaced**: one per patient per RESEND_SECONDS (a second
+ *   press sends nothing); the controller adds per IP, per address, per day
+ *   and per business limits.
  * - **Proven for this business only**, in the session, for VERIFIED_MINUTES
  *   or until the booking is made. Each business keeps its own record of a
  *   person (privacy policy section 12a), so nothing from another business is
@@ -44,6 +58,18 @@ class ReturningPatientService
     public const MAX_TRIES = 5;
 
     public const VERIFIED_MINUTES = 30;
+
+    /**
+     * Wrong codes for one patient (any IP, any code) => minutes codes pause
+     * after the last one. The last step repeats for every wrong code past it.
+     */
+    public const COOLDOWNS = [5 => 15, 10 => 60, 15 => 240, 20 => 1440];
+
+    /** Wrong codes are forgotten this long after the last one. */
+    public const FAILURE_MEMORY_HOURS = 48;
+
+    /** At most one email per patient this often. */
+    public const RESEND_SECONDS = 60;
 
     /** Session key: [listing id => {email, sent_at, tries, customer_id, verified_at}]. */
     public const SESSION_KEY = 'book_patient';
@@ -79,14 +105,21 @@ class ReturningPatientService
 
             return;
         }
-        $code  = sprintf('%06d', random_int(0, 999999));
-        $token = TokenHash::mint();
+        if (! empty($customer['login_sent_at'])
+            && strtotime((string) $customer['login_sent_at'] . ' UTC') > $this->now->getTimestamp() - self::RESEND_SECONDS) {
+            return; // A second press: the first email is on its way.
+        }
+        // Codes paused for this patient: the link only (it needs the inbox).
+        $paused = $this->codesPausedUntil($customer) !== null;
+        $code   = $paused ? '' : sprintf('%06d', random_int(0, 999999));
+        $token  = TokenHash::mint();
         BookingCustomerModel::forBusiness($this->listingId)->update((int) $customer['id'], [
-            'login_token_hash' => TokenHash::hash($token),
-            'login_code_hash'  => $this->codeHash($code, (string) $customer['hash']),
+            'login_token_hash'   => TokenHash::hash($token),
+            'login_code_hash'    => $paused ? null : $this->codeHash($code, (string) $customer['hash']),
             'login_expires'      => gmdate('Y-m-d H:i:s', $this->now->getTimestamp() + self::LINK_MINUTES * 60),
-            'login_code_expires' => gmdate('Y-m-d H:i:s', $this->now->getTimestamp() + self::CODE_MINUTES * 60),
+            'login_code_expires' => $paused ? null : gmdate('Y-m-d H:i:s', $this->now->getTimestamp() + self::CODE_MINUTES * 60),
             'login_tries'        => 0,
+            'login_sent_at'      => gmdate('Y-m-d H:i:s', $this->now->getTimestamp()),
         ]);
 
         $query = array_filter(self::selection($selection), static fn (string $v): bool => $v !== '');
@@ -100,25 +133,36 @@ class ReturningPatientService
             'codeMinutes' => self::CODE_MINUTES,
             'linkMinutes' => self::LINK_MINUTES,
         ], ['saveData' => false]);
-        (new Mailer())->send($email, 'Your code to book with ' . $this->listing['display_name'], $body, '', [
+        (new Mailer())->send($email, ($paused ? 'Your link to book with ' : 'Your code to book with ') . $this->listing['display_name'], $body, '', [
             'fromName' => $this->listing['display_name'] . ' via WebScheduler Local',
         ]);
     }
 
-    /** The customer id when the code is right and still live, else null (a wrong one counts as a try). */
+    /**
+     * The customer id when the code is right and still live, else null. A
+     * wrong code counts against this code (MAX_TRIES) and the patient
+     * (COOLDOWNS); while codes are paused nothing is checked or counted.
+     */
     public function checkCode(string $email, string $code): ?int
     {
         $code     = preg_replace('/\D+/', '', $code) ?? '';
         $customer = $this->customerByEmail($email);
         if ($customer === null || strlen($code) !== 6 || self::key() === '' || ! $this->live($customer, 'login_code_expires')
-            || (string) ($customer['login_code_hash'] ?? '') === '') {
+            || (string) ($customer['login_code_hash'] ?? '') === '' || $this->codesPausedUntil($customer) !== null) {
             return null;
         }
         if (! hash_equals((string) $customer['login_code_hash'], $this->codeHash($code, (string) $customer['hash']))) {
-            $tries = (int) $customer['login_tries'] + 1;
-            BookingCustomerModel::forBusiness($this->listingId)->update((int) $customer['id'], $tries >= self::MAX_TRIES
-                ? $this->cleared()
-                : ['login_tries' => $tries]);
+            $tries    = (int) $customer['login_tries'] + 1;
+            $failures = $this->failures($customer) + 1;
+            $patch    = ['login_tries' => $tries, 'login_failures' => min($failures, 65535), 'login_failed_at' => gmdate('Y-m-d H:i:s', $this->now->getTimestamp())];
+            if ($tries >= self::MAX_TRIES) {
+                // This code is dead; the link from the same email still works.
+                $patch += ['login_code_hash' => null, 'login_code_expires' => null];
+            }
+            BookingCustomerModel::forBusiness($this->listingId)->update((int) $customer['id'], $patch);
+            if ($failures >= max(array_keys(self::COOLDOWNS))) {
+                log_message('warning', 'Returning patient codes paused: ' . $failures . ' wrong codes for customer ' . $customer['id'] . ' of listing ' . $this->listingId);
+            }
 
             return null;
         }
@@ -135,7 +179,7 @@ class ReturningPatientService
         }
         $customer = BookingCustomerModel::forBusiness($this->listingId)
             ->where('login_token_hash', TokenHash::hash($token))->where('purged_at', null)->first();
-        if (! is_array($customer) || ! $this->live($customer, 'login_expires')) {
+        if (! is_array($customer) || ! $this->live($customer, 'login_expires', false)) {
             return null;
         }
         BookingCustomerModel::forBusiness($this->listingId)->update((int) $customer['id'], $this->cleared());
@@ -267,21 +311,62 @@ class ReturningPatientService
 
     /**
      * Whether the code (login_code_expires) or the link (login_expires) is
-     * still live: not past its time and not spent by five wrong codes.
+     * still live: not past its time, and for the code not spent by five
+     * wrong tries.
      *
      * @param array<string,mixed> $customer
      */
-    private function live(array $customer, string $expiresColumn): bool
+    private function live(array $customer, string $expiresColumn, bool $countTries = true): bool
     {
         return ! empty($customer[$expiresColumn])
             && (string) $customer[$expiresColumn] > gmdate('Y-m-d H:i:s', $this->now->getTimestamp())
-            && (int) ($customer['login_tries'] ?? 0) < self::MAX_TRIES;
+            && (! $countTries || (int) ($customer['login_tries'] ?? 0) < self::MAX_TRIES);
     }
 
-    /** @return array<string,null> */
+    /**
+     * Wrong codes this patient has had, forgotten FAILURE_MEMORY_HOURS after
+     * the last one.
+     *
+     * @param array<string,mixed> $customer
+     */
+    private function failures(array $customer): int
+    {
+        if (empty($customer['login_failed_at'])
+            || strtotime((string) $customer['login_failed_at'] . ' UTC') < $this->now->getTimestamp() - self::FAILURE_MEMORY_HOURS * 3600) {
+            return 0;
+        }
+
+        return (int) ($customer['login_failures'] ?? 0);
+    }
+
+    /**
+     * Until when codes are paused for this patient (UTC), or null. The pause
+     * runs from the last wrong code, for the step the count has reached.
+     *
+     * @param array<string,mixed> $customer
+     */
+    public function codesPausedUntil(array $customer): ?string
+    {
+        $failures = $this->failures($customer);
+        $minutes  = 0;
+        foreach (self::COOLDOWNS as $after => $pause) {
+            if ($failures >= $after) {
+                $minutes = $pause;
+            }
+        }
+        if ($minutes === 0) {
+            return null;
+        }
+        $until = strtotime((string) $customer['login_failed_at'] . ' UTC') + $minutes * 60;
+
+        return $until > $this->now->getTimestamp() ? gmdate('Y-m-d H:i:s', $until) : null;
+    }
+
+    /** Everything, after a success: the code, the link and the count of wrong codes. @return array<string,null> */
     private function cleared(): array
     {
-        return ['login_token_hash' => null, 'login_code_hash' => null, 'login_expires' => null, 'login_code_expires' => null, 'login_tries' => null];
+        return ['login_token_hash' => null, 'login_code_hash' => null, 'login_expires' => null, 'login_code_expires' => null,
+            'login_tries' => null, 'login_failures' => null, 'login_failed_at' => null];
     }
 
     /**

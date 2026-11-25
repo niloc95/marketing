@@ -401,6 +401,113 @@ final class BookingReturningTest extends CIUnitTestCase
         $this->assertSame($this->aliceId, (new ReturningPatientService($listing, $sentAt->modify('+4 minutes')))->checkCode('alice@example.test', $code));
     }
 
+
+    // Security review 2: wrong codes per patient, growing pauses, never a lockout
+
+    public function testWrongCodesPausePerPatientInGrowingSteps(): void
+    {
+        // Each wrong code from the 5th on pauses codes, for longer as they add up:
+        // 5 to 9 wrong, 15 minutes; 10 to 14, an hour; 15 to 19, 4 hours; 20 and up, a day.
+        $listing = $this->listings->find($this->listingId);
+        $t       = new DateTimeImmutable('now');
+        $tier    = static fn (int $n): int => $n >= 20 ? 1440 : ($n >= 15 ? 240 : ($n >= 10 ? 60 : ($n >= 5 ? 15 : 0)));
+        for ($n = 1; $n <= 21; $n++) {
+            [$code] = $this->sendAt($t);
+            $this->assertMatchesRegularExpression('/^\d{6}$/', $code, 'Codes are back once a pause is over (wrong code ' . $n . ')');
+            $this->assertNull((new ReturningPatientService($listing, $t))->checkCode('alice@example.test', $code === '000000' ? '111111' : '000000'));
+            $row = BookingCustomerModel::forBusiness($this->listingId)->find($this->aliceId);
+            $this->assertSame($n, (int) $row['login_failures'], 'Counted per patient across codes');
+            $pause = (new ReturningPatientService($listing, $t))->codesPausedUntil($row);
+            $this->assertSame($tier($n) === 0 ? null : gmdate('Y-m-d H:i:s', $t->getTimestamp() + $tier($n) * 60), $pause, 'Pause after wrong code ' . $n);
+
+            if ($pause !== null) {
+                // While paused: the email carries the link only, and a code is not even checked or counted.
+                [$none] = $this->sendAt($t->modify('+1 minute'));
+                $this->assertSame('', $none, 'No code while paused');
+                $this->assertStringContainsString('codes are paused', html_entity_decode((string) end($this->sent)['body']));
+                $this->assertNull((new ReturningPatientService($listing, $t->modify('+1 minute')))->checkCode('alice@example.test', '123456'));
+                $this->assertSame($n, (int) BookingCustomerModel::forBusiness($this->listingId)->find($this->aliceId)['login_failures'], 'Nothing counted while paused');
+            }
+            $t = $t->modify('+' . ($tier($n) + 1) . ' minutes');
+        }
+    }
+
+    public function testThePauseIsNeverPermanentAndTheLinkAlwaysWorks(): void
+    {
+        $listing = $this->listings->find($this->listingId);
+        $t       = new DateTimeImmutable('now');
+        // The worst a stranger can do: 20 wrong codes, a day's pause.
+        BookingCustomerModel::forBusiness($this->listingId)->update($this->aliceId, ['login_failures' => 20, 'login_failed_at' => gmdate('Y-m-d H:i:s', $t->getTimestamp())]);
+
+        [$code, $token] = $this->sendAt($t);
+        $this->assertSame('', $code);
+        $this->assertSame($this->aliceId, (new ReturningPatientService($listing, $t))->redeemLink($token), 'The patient still gets in with the link');
+        $row = BookingCustomerModel::forBusiness($this->listingId)->find($this->aliceId);
+        $this->assertNull($row['login_failures'], 'and that clears the count');
+
+        // Without using the link, the count is forgotten 48 hours after the last wrong code.
+        BookingCustomerModel::forBusiness($this->listingId)->update($this->aliceId, ['login_failures' => 500, 'login_failed_at' => gmdate('Y-m-d H:i:s', $t->getTimestamp())]);
+        $later = $t->modify('+48 hours +1 minute');
+        $this->assertNull((new ReturningPatientService($listing, $later))->codesPausedUntil(BookingCustomerModel::forBusiness($this->listingId)->find($this->aliceId)));
+        [$code] = $this->sendAt($later);
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $code);
+        $this->assertSame($this->aliceId, (new ReturningPatientService($listing, $later))->checkCode('alice@example.test', $code));
+    }
+
+    public function testWrongCodesFromManyAddressesAddUpForThePatient(): void
+    {
+        $slot = $this->firstSlot();
+        $code = $this->askForCode($slot['start']);
+        $wrong = $code === '000000' ? '111111' : '000000';
+        foreach (['198.51.100.1', '198.51.100.2', '198.51.100.3', '198.51.100.4', '198.51.100.5'] as $ip) {
+            $this->remoteAddr($ip);
+            $this->carry()->post('directory/rosebank-family-practice/book/returning/code', $this->hidden($slot['start']) + ['code' => $wrong]);
+        }
+        $row = BookingCustomerModel::forBusiness($this->listingId)->find($this->aliceId);
+        $this->assertSame(5, (int) $row['login_failures']);
+        $this->assertNotNull((new ReturningPatientService($this->listings->find($this->listingId)))->codesPausedUntil($row), 'Paused whatever the IP');
+    }
+
+    // Security review 2: email abuse
+
+    public function testOneEmailPerPatientAMinute(): void
+    {
+        $listing = $this->listings->find($this->listingId);
+        $t       = new DateTimeImmutable('now');
+        $sel     = ReturningPatientService::selection($this->hidden($this->firstSlot()['start']));
+        (new ReturningPatientService($listing, $t))->send('alice@example.test', $sel);
+        (new ReturningPatientService($listing, $t->modify('+30 seconds')))->send('alice@example.test', $sel);
+        $this->assertCount(1, $this->sent, 'A second press within a minute sends nothing');
+        (new ReturningPatientService($listing, $t->modify('+61 seconds')))->send('alice@example.test', $sel);
+        $this->assertCount(2, $this->sent);
+    }
+
+    public function testSixEmailsAnAddressADayWhateverTheIp(): void
+    {
+        $start = $this->firstSlot()['start'];
+        for ($i = 1; $i <= Book::CODES_PER_ADDRESS_A_DAY + 1; $i++) {
+            $this->remoteAddr('198.51.100.' . $i);
+            // Past the hourly bucket each time: only the daily one is left to say no.
+            cache()->delete('throttler_bookret-to-' . md5('alice@example.test'));
+            BookingCustomerModel::forBusiness($this->listingId)->update($this->aliceId, ['login_sent_at' => null]);
+            $_SESSION = [];
+            $this->carry()->post('directory/rosebank-family-practice/book/returning', $this->hidden($start) + ['returning_email' => 'alice@example.test']);
+        }
+        $this->assertCount(Book::CODES_PER_ADDRESS_A_DAY, $this->sent);
+        $this->assertStringStartsWith('Too many codes', (string) ($_SESSION['returning_error'] ?? ''));
+    }
+
+    public function testOneBusinessSendsAtMostSixtyAnHour(): void
+    {
+        $start = $this->firstSlot()['start'];
+        for ($i = 0; $i <= Book::CODES_PER_BUSINESS_AN_HOUR; $i++) {
+            $this->remoteAddr('198.51.' . intdiv($i, 4) . '.' . ($i % 4 + 1));
+            $_SESSION = [];
+            $this->carry()->post('directory/rosebank-family-practice/book/returning', $this->hidden($start) + ['returning_email' => 'patient' . $i . '@example.test']);
+        }
+        $this->assertStringStartsWith('Too many codes', (string) ($_SESSION['returning_error'] ?? ''), 'The 61st in an hour is refused');
+    }
+
     // Helpers
 
     /** The address the connection comes from (CI4 reads the server array through its superglobals service). */
@@ -413,14 +520,15 @@ final class BookingReturningTest extends CIUnitTestCase
     /** Send through the service at a given time; returns [code, token] from the email. @return array{0:string,1:string} */
     private function sendAt(DateTimeImmutable $at): array
     {
+        // A fresh request each time; the 60 second spacing has its own test.
+        BookingCustomerModel::forBusiness($this->listingId)->update($this->aliceId, ['login_sent_at' => null]);
         (new ReturningPatientService($this->listings->find($this->listingId), $at))->send('alice@example.test', ReturningPatientService::selection($this->hidden($this->firstSlot()['start'])));
         $body = html_entity_decode((string) end($this->sent)['body']);
         preg_match('/letter-spacing:8px[^>]*>(\d{6})</', $body, $c);
         preg_match('#book/returning/([0-9a-f]{64})#', $body, $t);
-        $this->assertNotEmpty($c);
         $this->assertNotEmpty($t);
 
-        return [$c[1], $t[1]];
+        return [$c[1] ?? '', $t[1]];
     }
 
     /** Tokens left in an IP's link bucket (cache read only). */
