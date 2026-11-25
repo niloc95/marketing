@@ -30,19 +30,29 @@ class NotificationCentre
     }
 
     /** @return list<array<string,mixed>> */
-    public function latest(int $limit = 50, int $offset = 0): array
+    public function latest(int $limit = 50, int $offset = 0, bool $unreadOnly = false): array
     {
-        return BookingInboxModel::forBusiness($this->listingId)
-            ->select('xs_booking_inbox.*, a.hash AS appointment_hash, a.start_at')
+        // The appointment's status now, so a request still waiting shows it.
+        $model = BookingInboxModel::forBusiness($this->listingId)
+            ->select('xs_booking_inbox.*, a.hash AS appointment_hash, a.start_at, a.status AS appointment_status')
             ->join('xs_booking_appointments a', 'a.id = xs_booking_inbox.appointment_id AND a.listing_id = xs_booking_inbox.listing_id', 'left')
-            ->where('xs_booking_inbox.member_id', $this->memberId)
-            ->orderBy('xs_booking_inbox.id', 'DESC')->findAll($limit, $offset);
+            ->where('xs_booking_inbox.member_id', $this->memberId);
+        if ($unreadOnly) {
+            $model->where('xs_booking_inbox.read_at', null);
+        }
+
+        return $model->orderBy('xs_booking_inbox.id', 'DESC')->findAll($limit, $offset);
     }
 
     /** How many notices latest() pages through, for the pager. */
-    public function count(): int
+    public function count(bool $unreadOnly = false): int
     {
-        return BookingInboxModel::forBusiness($this->listingId)->where('member_id', $this->memberId)->countAllResults();
+        $model = BookingInboxModel::forBusiness($this->listingId)->where('member_id', $this->memberId);
+        if ($unreadOnly) {
+            $model->where('read_at', null);
+        }
+
+        return $model->countAllResults();
     }
 
     public function unread(): int

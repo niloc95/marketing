@@ -8,9 +8,11 @@
  * @var list<array<string,mixed>>              $providers in the member's scope
  * @var list<array{value:string,label:string}> $statuses
  * @var array<string,string>                   $sendChannels
- * @var bool                                   $fromCustomer opened on a customer page: no Customer button, an Open in calendar link
+ * @var bool                                   $customerLink a Customer button (not on the customer's own page)
+ * @var bool                                   $calendarLink an Open in calendar link (pages outside the calendar)
  */
-$fromCustomer ??= false;
+$customerLink ??= true;
+$calendarLink ??= false;
 ?>
 <dialog class="cal-dialog appt-dialog" data-cal-details aria-labelledby="cal-details-title">
     <header class="appt-head">
@@ -28,9 +30,10 @@ $fromCustomer ??= false;
     <div class="appt-body" data-d-view="main">
         <div class="appt-actions">
             <button type="button" class="btn btn-primary btn-xs" data-d-reschedule><?= lucide('calendar-days', 'h-4 w-4') ?> Reschedule</button>
-            <?php if ($fromCustomer): ?>
+            <?php if ($calendarLink): ?>
                 <a class="btn btn-ghost btn-xs" href="#" data-d-calendar><?= lucide('calendar', 'h-4 w-4') ?> Open in calendar</a>
-            <?php else: ?>
+            <?php endif ?>
+            <?php if ($customerLink): ?>
                 <a class="btn btn-ghost btn-xs" href="#" data-d-customer><?= lucide('user', 'h-4 w-4') ?> Customer</a>
             <?php endif ?>
             <a class="btn btn-ghost btn-xs" href="#" data-d-call><?= lucide('phone', 'h-4 w-4') ?> Call</a>

@@ -541,7 +541,7 @@ final class BookingAppointmentsTest extends CIUnitTestCase
         $hash  = (new CustomerService($this->listingId))->findByEmail('alice@example.test')['hash'];
         $page  = $this->signedIn()->get('business/customers/' . $hash)->getBody();
 
-        $this->assertStringContainsString('data-customer-view', $page);
+        $this->assertStringContainsString('data-appt-host', $page);
         $this->assertStringContainsString('data-appt-open="' . $a['id'] . '"', $page, 'the card opens the dialog on this page');
         $this->assertStringContainsString('data-cal-details', $page);
         $this->assertStringContainsString('data-d-calendar', $page, 'Open in calendar instead of a Customer button');

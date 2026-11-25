@@ -1,8 +1,11 @@
 /**
- * The customer page (business/customer.php): an appointment card opens the
- * calendar's details dialog right here, so the person stays with this
- * customer. Closing it after a change (status, notes, a move, a deposit)
- * fetches the page again in place, so the cards and counts are current.
+ * Pages that list appointments as cards outside the calendar, the customer
+ * page (business/customer.php) and Notices (business/notifications.php): a
+ * card opens the calendar's details dialog right here, so the person stays
+ * where they were. Closing it after a change (status, notes, a move, a
+ * deposit, a notice marked read) fetches the page again in place, so the
+ * cards and counts are current. A notice card (data-notice-read) is marked
+ * read as it opens.
  *
  * details.js expects the calendar's scheduler; this is the little of it the
  * dialog uses: busy, toast, reload and reschedule. Each card is a link to the
@@ -13,7 +16,9 @@ import { initDetails } from './calendar/details.js';
 import { MSG } from './calendar/messages.js';
 import { visit } from '../shell/spa.js';
 
-export function initCustomerPage(root) {
+export function initAppointmentHost(root) {
+  // A member who may not open appointments gets the page without the dialog.
+  if (!root.querySelector('[data-cal-details]')) return undefined;
   initCsrf(root.dataset.csrfHeader, root.dataset.csrfHash);
   const dialog = root.querySelector('[data-cal-details]');
   const toastBox = root.querySelector('[data-cal-toast]');
@@ -55,6 +60,9 @@ export function initCustomerPage(root) {
     if (!card || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     details.open(Number(card.dataset.apptOpen));
+    if (card.dataset.noticeRead && root.dataset.readUrl) {
+      postJson(root.dataset.readUrl, { id: Number(card.dataset.noticeRead) }).then((res) => { if (res.ok) changed = true; });
+    }
   };
   root.addEventListener('click', onClick);
 

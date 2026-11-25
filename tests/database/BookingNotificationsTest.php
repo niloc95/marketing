@@ -653,6 +653,39 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertStringContainsString('href="' . base_url('business/notifications/sent') . '?channel=email" rel="prev"', $sent);
     }
 
+    public function testNoticeCardsOpenInPlaceFilterUnreadAndMarkReadByScript(): void
+    {
+        $id = $this->bookOnline();
+        $member = BusinessMemberModel::forBusiness($this->listingId)->first();
+        BookingInboxModel::forBusiness($this->listingId)->insert([
+            'listing_id' => $this->listingId, 'member_id' => (int) $member['id'], 'event' => 'cancelled', 'title' => 'Already seen', 'read_at' => gmdate('Y-m-d H:i:s'),
+        ]);
+        $notice = BookingInboxModel::forBusiness($this->listingId)->where('appointment_id', $id)->first();
+        $this->signIn();
+
+        $page = (string) $this->get('business/notifications')->response()->getBody();
+        $this->assertStringContainsString('data-appt-open="' . $id . '"', $page, 'the card opens the appointment here');
+        $this->assertStringContainsString('data-notice-read="' . $notice['id'] . '"', $page);
+        $this->assertStringContainsString('data-cal-details', $page);
+        $this->assertStringContainsString('data-d-calendar', $page);
+        $this->assertStringContainsString('appt-pill" data-status="pending"', $page, 'the appointment\'s status now');
+        $this->assertStringContainsString('Already seen', $page);
+
+        $unread = (string) $this->get('business/notifications?show=unread')->response()->getBody();
+        $this->assertStringNotContainsString('Already seen', $unread);
+        $this->assertStringContainsString('New booking request from Alice Johnson', $unread);
+
+        // The page script marks one read with JSON and gets the next token back.
+        $res = $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest', 'Content-Type' => 'application/json', config('Security')->headerName => csrf_hash()])
+            ->withBody(json_encode(['id' => (int) $notice['id']]))
+            ->call('post', 'business/notifications/read');
+        $body = json_decode((string) $res->response()->getBody(), true);
+        $this->assertTrue($body['ok']);
+        $this->assertArrayHasKey('csrf', $body);
+        $this->assertNotNull(BookingInboxModel::forBusiness($this->listingId)->find((int) $notice['id'])['read_at']);
+        $this->assertStringContainsString('All read.', (string) $this->get('business/notifications?show=unread')->response()->getBody());
+    }
+
     public function testTheBookingsTeamPageCarriesTheProfileTabs(): void
     {
         $this->signIn();

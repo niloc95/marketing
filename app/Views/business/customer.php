@@ -3,7 +3,7 @@
  * One customer, as cards: who they are and how to reach them, their
  * appointments (upcoming first, past folded after five), their details
  * (read until Edit), and their data. An appointment card opens the
- * calendar's details dialog here (resources/business/customer-page.js), so
+ * calendar's details dialog here (resources/business/appointment-host.js), so
  * the person stays with this customer; it is still a link to the calendar
  * without script.
  *
@@ -66,7 +66,7 @@ $notes = trim((string) ($customer['notes'] ?? ''));
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
-<div class="cust-page" data-customer-view
+<div class="cust-page" data-appt-host
      data-appointment-url="<?= esc(base_url('business/api/appointments'), 'attr') ?>"
      data-calendar-page="<?= esc(base_url('business/calendar'), 'attr') ?>"
      data-csrf-header="<?= esc(config('Security')->headerName, 'attr') ?>" data-csrf-hash="<?= esc(csrf_hash(), 'attr') ?>">
@@ -185,7 +185,7 @@ $notes = trim((string) ($customer['notes'] ?? ''));
     </div>
 
     <div class="cal-toast" data-cal-toast role="status" aria-live="polite" hidden></div>
-    <?= view('business/_appointment_details', ['providers' => $providers, 'statuses' => $statuses, 'sendChannels' => $sendChannels, 'fromCustomer' => true]) ?>
+    <?= view('business/_appointment_details', ['providers' => $providers, 'statuses' => $statuses, 'sendChannels' => $sendChannels, 'customerLink' => false, 'calendarLink' => true]) ?>
 </div>
 <?= $this->endSection() ?>
 

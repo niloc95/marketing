@@ -39,6 +39,8 @@ const outDir = path.join(projectRoot, 'resources', 'icons');
  * canonical name is the one used here.
  */
 const ICONS = [
+  // /business Notices cards (business/notifications.php): one per event.
+  'calendar-check', 'calendar-clock', 'calendar-x', 'inbox',
   // Chrome: header, mobile menu, theme switch.
   'moon', 'sun', 'menu', 'x', 'search',
   // The search composer's round send button (directory/_search_send.php).
