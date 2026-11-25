@@ -287,6 +287,7 @@ $routes->group('business', ['filter' => 'businessauth:account'], static function
     $routes->get('account', 'Business\Account::show');
     $routes->post('account/name', 'Business\Account::saveName');
     $routes->post('account/password', 'Business\Account::savePassword');
+    $routes->post('account/email', 'Business\Account::saveEmail');
 });
 $routes->get('business', 'Business\Home::index', ['filter' => 'businessauth:owner']);
 // Phase 7: the dashboard's refresh (today's list and figures, as HTML) and analytics.
@@ -437,6 +438,8 @@ $routes->get('business/customers/(:segment)/export', 'Business\Customers::export
 $routes->group('business', ['filter' => 'businessauth:guest'], static function ($routes) {
     $routes->get('invite/(:segment)', 'Business\Invite::show/$1');
     $routes->post('invite/(:segment)', 'Business\Invite::accept/$1');
+    // T36: the link to a person's new email (signed in or not).
+    $routes->get('account/email/(:segment)', 'Business\Account::confirmEmail/$1');
 });
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:services.manage']], static function ($routes) {
     $routes->get('services', 'Business\Services::index');
@@ -454,6 +457,16 @@ $routes->group('business', ['filter' => ['businessauth', 'businesscan:members.ma
     $routes->post('team/members/(:num)/role', 'Business\Team::changeRole/$1');
     $routes->post('team/members/(:num)/remove', 'Business\Team::removeMember/$1');
     $routes->post('team/(:num)/archive', 'Business\Team::archive/$1');
+    // T36: one place per person, who covers whom, hand over.
+    $routes->get('team/people/(:num)', 'Business\Team::person/$1');
+    $routes->post('team/people/(:num)/notices', 'Business\Team::notices/$1');
+    $routes->post('team/people/(:num)/looks-after', 'Business\Team::looksAfter/$1');
+    $routes->post('team/people/(:num)/email', 'Business\Team::changeEmail/$1');
+    $routes->post('team/people/(:num)/resend', 'Business\Team::resend/$1');
+    $routes->post('team/people/(:num)/cancel', 'Business\Team::cancelInvite/$1');
+    $routes->post('team/people/(:num)/hand-over', 'Business\Team::handOver/$1');
+    $routes->post('team/cover', 'Business\Team::cover');
+    $routes->post('team/(:num)/sign-in', 'Business\Team::signIn/$1');
 });
 $routes->group('business', ['filter' => ['businessauth', 'businesscan:providers.manage']], static function ($routes) {
     $routes->get('team', 'Business\Team::index');

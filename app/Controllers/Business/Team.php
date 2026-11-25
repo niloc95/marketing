@@ -9,6 +9,7 @@ use App\Models\DirectoryListingTeamModel;
 use App\Services\Bookings\BookingAuthorization;
 use App\Services\Bookings\CatalogueService;
 use App\Services\Bookings\ProviderWeek;
+use App\Services\Bookings\TeamCover;
 use App\Services\Bookings\TeamService;
 use App\Services\TeamMemberService;
 use CodeIgniter\Exceptions\PageNotFoundException;
@@ -46,9 +47,14 @@ class Team extends BaseController
             $changed[(int) $p['id']] = $team->openingHoursChanged((int) $p['id'], $p);
         }
 
+        $isAdmin = $context->can('members.manage');
+
         return view('business/team', [
             // The profile's section tabs, when this page is one of its sections.
             'profileTabs' => \App\Services\ProfileSectionTabs::forBookingsPage('team'),
+            // Everyone in one list, and who covers whom (T36): admins only.
+            'people'        => $isAdmin ? $this->people($team, $providers) : [],
+            'cover'         => $isAdmin ? $this->coverGrid($team) : [],
             'providers'     => $providers,
             'hours'         => $hours,
             'hoursChanged'  => $changed,
@@ -87,10 +93,11 @@ class Team extends BaseController
             'locations'    => $team->locationChoices($context->listing()),
             'services'     => (new CatalogueService($context->listingId()))->services(),
             'offered'      => (new CatalogueService($context->listingId()))->servicesForProvider($id),
-            'staff'        => array_values(array_filter($team->members(), static fn (array $m): bool => $m['role'] === BookingPermissions::STAFF && $m['status'] === 'active')),
-            'assigned'     => $team->staffFor($id),
             'members'      => $context->can('members.manage') ? $team->members() : [],
             'isAdmin'      => $context->can('members.manage'),
+            // Who signs in as them, and what that sign in covers (T36).
+            'access'       => $context->can('members.manage') && $provider['member_id'] !== null ? $this->access($team, (int) $provider['member_id']) : null,
+            'roleLabels'   => config('BookingPermissions')->roleLabels,
             'weekdays'     => TeamService::WEEKDAYS,
             'errors'       => flash('errors') ?: [],
         ]);
@@ -131,6 +138,24 @@ class Team extends BaseController
         }
         $team   = new TeamService($context->listingId());
         $cardId = (int) $this->request->getPost('team_member_id');
+        $email  = trim((string) $this->request->getPost('email'));
+
+        // Someone customers do not book (reception, a practice manager): a sign
+        // in only, no practitioner and no card on the profile (T36).
+        if ($cardId === 0 && $this->request->getPost('bookable') !== '1') {
+            if ($email === '') {
+                return redirect()->to(base_url('business/team#add'))->with('error', 'Give their email so they can sign in, or tick "Customers book them".');
+            }
+            $role    = (string) ($this->request->getPost('member_role') ?: BookingPermissions::STAFF);
+            $invited = $team->invite($context->listing(), $email, (string) $this->request->getPost('name'), $role, null, $context->accountId());
+            if ($invited['errors'] !== []) {
+                return redirect()->to(base_url('business/team#add'))->with('error', implode(' ', $invited['errors']));
+            }
+
+            return redirect()->to(base_url('business/team/people/' . $invited['member_id']))->with('success', 'Invitation sent. '
+                . ($role === BookingPermissions::STAFF ? 'Tick who they look after.' : 'Choose whose notices they get.'));
+        }
+
         $input  = $cardId > 0
             ? ['team_member_id' => $cardId]
             : [
@@ -145,7 +170,6 @@ class Team extends BaseController
             return redirect()->to(base_url('business/team'))->with('error', implode(' ', $result['errors']));
         }
 
-        $email = trim((string) $this->request->getPost('email'));
         if ($email !== '') {
             $provider = $team->provider((int) $result['id']);
             $invited  = $team->invite($context->listing(), $email, (string) $provider['name'], (string) ($this->request->getPost('member_role') ?: BookingPermissions::PROVIDER), (int) $result['id'], $context->accountId());
@@ -185,8 +209,8 @@ class Team extends BaseController
         if ($photo['path'] !== null) {
             $input['photo_path'] = $photo['path'];
         }
-        // Only an admin decides who signs in as this person.
-        if ($context->can('members.manage')) {
+        // Only an admin decides who signs in as this person (the Sign in card).
+        if ($context->can('members.manage') && $this->request->getPost('member_id') !== null) {
             $input['member_id'] = (int) $this->request->getPost('member_id');
         }
         $result = $team->saveProvider($id, $input, $context->accountId());
@@ -197,9 +221,6 @@ class Team extends BaseController
         }
 
         (new CatalogueService($context->listingId()))->setServicesForProvider($id, array_map('intval', (array) $this->request->getPost('service_ids')));
-        if ($context->can('members.manage')) {
-            $team->setStaff($id, array_map('intval', (array) $this->request->getPost('staff_ids')), $context->accountId());
-        }
 
         return redirect()->to(base_url('business/team/' . $id))->with('success', 'Saved.');
     }
@@ -258,26 +279,285 @@ class Team extends BaseController
             $context->accountId(),
         );
         if ($result['errors'] !== []) {
-            return redirect()->to(base_url('business/team#access'))->with('error', implode(' ', $result['errors']));
+            return redirect()->to(base_url('business/team#people'))->with('error', implode(' ', $result['errors']));
         }
 
-        return redirect()->to(base_url('business/team#access'))->with('success', 'Invitation sent. The link works for ' . TeamService::INVITE_DAYS . ' days.');
+        return redirect()->to(base_url('business/team#people'))->with('success', 'Invitation sent. The link works for ' . TeamService::INVITE_DAYS . ' days.');
     }
 
     public function changeRole(int $memberId)
     {
         $context = service('businessContext');
+        $this->memberOr404($memberId);
         $problem = (new TeamService($context->listingId()))->changeRole($memberId, (string) $this->request->getPost('role'), $context->accountId());
 
-        return redirect()->to(base_url('business/team#access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Role changed.');
+        return redirect()->to($this->personUrl($memberId, 'access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Role changed.');
     }
 
     public function removeMember(int $memberId)
     {
         $context = service('businessContext');
-        $problem = (new TeamService($context->listingId()))->removeMember($memberId, $context->accountId());
+        $to      = (int) $this->request->getPost('hand_over_to');
+        $problem = (new TeamService($context->listingId()))->removeMember($memberId, $context->accountId(), $to > 0 ? $to : null);
+        if ($problem !== null) {
+            return redirect()->to($this->personUrl($memberId))->with('error', $problem);
+        }
 
-        return redirect()->to(base_url('business/team#access'))->with($problem === null ? 'success' : 'error', $problem ?? 'Access removed.');
+        return redirect()->to(base_url('business/team#people'))->with('success', $to > 0 ? 'Removed, and handed over.' : 'Removed. They can no longer sign in.');
+    }
+
+    /** One person who signs in but takes no bookings (reception, a manager). */
+    public function person(int $memberId)
+    {
+        $context = service('businessContext');
+        $team    = new TeamService($context->listingId());
+        $access  = $this->access($team, $memberId);
+        if ($access === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+        // Someone customers book has one page: their practitioner page.
+        $provider = \App\Models\Bookings\BookingProviderModel::forBusiness($context->listingId())->where('member_id', $memberId)->first();
+        if (is_array($provider)) {
+            return redirect()->to(base_url('business/team/' . $provider['id'] . '#access'));
+        }
+
+        return view('business/person', [
+            'profileTabs' => \App\Services\ProfileSectionTabs::forBookingsPage('team'),
+            'access'      => $access,
+            'roleLabels'  => config('BookingPermissions')->roleLabels,
+        ]);
+    }
+
+    /** Whose notices they get (T36). */
+    public function notices(int $memberId)
+    {
+        $context = service('businessContext');
+        $problem = (new TeamCover($context->listingId()))->setNotices(
+            $this->memberOr404($memberId),
+            array_map('intval', (array) $this->request->getPost('provider_ids')),
+            $this->request->getPost('all') === '1',
+            $context->accountId(),
+        );
+
+        return redirect()->to($this->personUrl($memberId, 'notices'))->with($problem === null ? 'success' : 'error', $problem ?? 'Notices saved.');
+    }
+
+    /** Who reception looks after (T36). */
+    public function looksAfter(int $memberId)
+    {
+        $context = service('businessContext');
+        $problem = (new TeamCover($context->listingId()))->setLooksAfter(
+            $this->memberOr404($memberId),
+            array_map('intval', (array) $this->request->getPost('provider_ids')),
+            $context->accountId(),
+        );
+
+        return redirect()->to($this->personUrl($memberId, 'looks-after'))->with($problem === null ? 'success' : 'error', $problem ?? 'Saved.');
+    }
+
+    /** "Who covers whom": the whole grid in one save. */
+    public function cover()
+    {
+        $context = service('businessContext');
+        $looks   = [];
+        $notices = [];
+        foreach ((array) $this->request->getPost('looks') as $memberId => $ids) {
+            $looks[(int) $memberId] = array_map('intval', (array) $ids);
+        }
+        foreach ((array) $this->request->getPost('notices') as $memberId => $ids) {
+            $notices[(int) $memberId] = array_map('intval', (array) $ids);
+        }
+        (new TeamCover($context->listingId()))->saveGrid(
+            $looks,
+            $notices,
+            array_map('intval', (array) $this->request->getPost('all')),
+            array_map('intval', (array) $this->request->getPost('members')),
+            $context->accountId(),
+        );
+
+        return redirect()->to(base_url('business/team#cover'))->with('success', 'Who covers whom is saved.');
+    }
+
+    /** An admin changes someone's email: confirmed from the new address (T36). */
+    public function changeEmail(int $memberId)
+    {
+        $context = service('businessContext');
+        $this->memberOr404($memberId);
+        if ($memberId === (int) $context->member()['id']) {
+            return redirect()->to(base_url('business/account#email'))->with('error', 'Change your own email on your account page.');
+        }
+        $problem = (new TeamService($context->listingId()))->changeMemberEmail($context->listing(), $memberId, (string) $this->request->getPost('email'), $context->accountId());
+
+        return redirect()->to($this->personUrl($memberId, 'access'))->with($problem === null ? 'success' : 'error', $problem
+            ?? 'We emailed a link to the new address. Their old email keeps working until they open it.');
+    }
+
+    public function resend(int $memberId)
+    {
+        $context = service('businessContext');
+        $this->memberOr404($memberId);
+        $problem = (new TeamService($context->listingId()))->resendInvite($context->listing(), $memberId, $context->accountId());
+
+        return redirect()->to($this->personUrl($memberId, 'access'))->with($problem === null ? 'success' : 'error', $problem
+            ?? 'Sent again. The new link works for ' . TeamService::INVITE_DAYS . ' days; the old one no longer does.');
+    }
+
+    public function cancelInvite(int $memberId)
+    {
+        $context = service('businessContext');
+        $this->memberOr404($memberId);
+        $problem = (new TeamService($context->listingId()))->cancelInvite($memberId, $context->accountId());
+
+        return redirect()->to(base_url('business/team#people'))->with($problem === null ? 'success' : 'error', $problem ?? 'Invitation cancelled. The link no longer works.');
+    }
+
+    /** Hand over without removing, e.g. while someone is on leave. */
+    public function handOver(int $memberId)
+    {
+        $context = service('businessContext');
+        $this->memberOr404($memberId);
+        $moved = (new TeamCover($context->listingId()))->handOver($memberId, (int) $this->request->getPost('hand_over_to'), $context->accountId());
+
+        return redirect()->to($this->personUrl($memberId, 'access'))->with($moved['error'] === null ? 'success' : 'error', $moved['error'] ?? 'Handed over.');
+    }
+
+    /** Give a practitioner a sign in: someone already signing in, or an invitation. */
+    public function signIn(int $providerId)
+    {
+        $context = service('businessContext');
+        $team    = new TeamService($context->listingId());
+        $provider = $team->provider($providerId);
+        if ($provider === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+        $back  = base_url('business/team/' . $providerId . '#access');
+        $email = trim((string) $this->request->getPost('email'));
+        if ($email !== '') {
+            $result = $team->invite($context->listing(), $email, (string) $provider['name'], (string) ($this->request->getPost('role') ?: BookingPermissions::PROVIDER), $providerId, $context->accountId());
+
+            return redirect()->to($back)->with($result['errors'] === [] ? 'success' : 'error', $result['errors'] === []
+                ? 'Invitation sent. The link works for ' . TeamService::INVITE_DAYS . ' days.'
+                : implode(' ', $result['errors']));
+        }
+        $result = $team->saveProvider($providerId, ['member_id' => (int) $this->request->getPost('member_id')], $context->accountId());
+
+        return redirect()->to($back)->with($result['errors'] === [] ? 'success' : 'error', $result['errors'] === [] ? 'Saved.' : implode(' ', $result['errors']));
+    }
+
+    /**
+     * Everyone in one list: each practitioner (with or without a sign in) and
+     * each person who signs in without taking bookings.
+     *
+     * @param list<array<string,mixed>> $providers
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function people(TeamService $team, array $providers): array
+    {
+        $cover   = new TeamCover($team->listingId());
+        $members = [];
+        foreach ($team->members() as $m) {
+            $members[(int) $m['id']] = $m;
+        }
+        $names   = array_column($providers, 'name', 'id');
+        $pending = $team->pendingEmailChanges();
+        $linked  = [];
+        $rows    = [];
+        $row     = static function (?array $m) use ($cover, $names, $pending): array {
+            if ($m === null) {
+                return ['member' => null, 'looks' => [], 'notices' => [], 'all' => false, 'pending' => null];
+            }
+            $id = (int) $m['id'];
+
+            return [
+                'member'  => $m,
+                'looks'   => array_values(array_intersect_key($names, array_flip($cover->looksAfter($id)))),
+                'notices' => array_values(array_intersect_key($names, array_flip($cover->noticesFor($id)))),
+                'all'     => $m['role'] === BookingPermissions::ADMIN && (int) $m['notices_all'] === 1,
+                'pending' => $pending[$id] ?? null,
+            ];
+        };
+        foreach ($providers as $p) {
+            $m = $p['member_id'] !== null ? ($members[(int) $p['member_id']] ?? null) : null;
+            if ($m !== null) {
+                $linked[(int) $m['id']] = true;
+            }
+            $rows[] = ['provider' => $p, 'url' => base_url('business/team/' . $p['id'])] + $row($m);
+        }
+        foreach ($members as $id => $m) {
+            // Someone invited to take over another's email shows on that person's row.
+            if (isset($linked[$id]) || $m['replaces_member_id'] !== null) {
+                continue;
+            }
+            $rows[] = ['provider' => null, 'url' => base_url('business/team/people/' . $id)] + $row($m);
+        }
+
+        return $rows;
+    }
+
+    /** @return array<string,mixed> the Who covers whom grid */
+    private function coverGrid(TeamService $team): array
+    {
+        $cover   = new TeamCover($team->listingId());
+        $members = array_values(array_filter($team->members(), static fn (array $m): bool => $m['replaces_member_id'] === null));
+        $grid    = ['providers' => $team->providers(), 'members' => $members, 'looks' => [], 'notices' => [], 'canCover' => []];
+        foreach ($members as $m) {
+            $id                     = (int) $m['id'];
+            $grid['looks'][$id]     = $cover->looksAfter($id);
+            $grid['notices'][$id]   = $cover->noticesFor($id);
+            $grid['canCover'][$id]  = $cover->canCover($m);
+        }
+
+        return $grid;
+    }
+
+    /**
+     * Everything the Sign in, Looks after and Notices cards need for one member.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function access(TeamService $team, int $memberId): ?array
+    {
+        $members = $team->members();
+        $member  = null;
+        foreach ($members as $m) {
+            if ((int) $m['id'] === $memberId) {
+                $member = $m;
+            }
+        }
+        if ($member === null) {
+            return null;
+        }
+        $cover     = new TeamCover($team->listingId());
+        $providers = $team->providers();
+
+        return [
+            'member'      => $member,
+            'isMe'        => $memberId === (int) service('businessContext')->member()['id'],
+            'providers'   => $providers,
+            'looks'       => $cover->looksAfter($memberId),
+            'notices'     => $cover->noticesFor($memberId),
+            'canCover'    => $cover->canCover($member),
+            'handOverTo'  => $cover->handOverChoices($memberId, $members),
+            'pending'     => $team->pendingEmailChanges()[$memberId] ?? null,
+            'linkedTo'    => array_values(array_filter($providers, static fn (array $p): bool => (int) ($p['member_id'] ?? 0) === $memberId)),
+        ];
+    }
+
+    /** The member id, or 404 when they are not part of this business. */
+    private function memberOr404(int $memberId): int
+    {
+        $m = \App\Models\Bookings\BusinessMemberModel::forBusiness(service('businessContext')->listingId())->find($memberId);
+        if (! is_array($m) || $m['status'] === 'removed') {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        return $memberId;
+    }
+
+    private function personUrl(int $memberId, string $anchor = ''): string
+    {
+        return base_url('business/team/people/' . $memberId . ($anchor !== '' ? '#' . $anchor : ''));
     }
 
     /** 404 for a provider of another business, 403 for one this member may not change. */

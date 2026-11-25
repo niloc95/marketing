@@ -32,6 +32,12 @@ $booking = $tables === null ? [] : array_values(array_filter(
             Bookings start hidden. Bookings needs the Verified badge (co.za) or Plus (.app).</li>
         <li>People: <code><?= esc($prefix) ?>accounts</code> (sign in) plus <code><?= esc($prefix) ?>business_members</code>
             (account x profile x role: admin, provider, staff). Customers have no accounts; they get hash and token links.</li>
+        <li>Who covers whom (T36): <code>/business/team</code> lists everyone with role, who reception looks after
+            (<code><?= esc($prefix) ?>booking_staff_assignments</code>) and whose notices each gets
+            (<code><?= esc($prefix) ?>booking_notice_routes</code>, admins <code>notices_all</code>), one page per person, a grid,
+            hand over and remove with hand over (<code>TeamCover</code>). Team notices go only to those ticks, within what the
+            member may see. An admin changes someone's email by inviting the new address (<code>replaces_member_id</code>); a
+            person changes their own on Account with a link (<code>pending_email</code>).</li>
         <li>Appointments store UTC and snapshot service, duration, price, person and location. Created only through
             <code>BookingLock::reserve()</code> (row lock on the person), reference <code>WSB-BOOK-000123</code>.</li>
         <li>Spec: <code>docs/bookings/</code> (<code>data-model.md</code>, <code>permissions.md</code>, <code>routes.md</code>,
@@ -40,7 +46,7 @@ $booking = $tables === null ? [] : array_values(array_filter(
 
     <h3>Pieces</h3>
     <ul>
-        <li><strong>Catalogue and team:</strong> <code>CatalogueService</code>, <code>TeamService</code>, <code>TimeOffService</code>.</li>
+        <li><strong>Catalogue and team:</strong> <code>CatalogueService</code>, <code>TeamService</code>, <code>TeamCover</code> (looks after, notices, hand over), <code>TimeOffService</code>.</li>
         <li><strong>Read once per request:</strong> <code>BookingMemo</code> keeps a business's settings, services and person to service links for 2 seconds at most in the process; any write through <code>BookingSettingModel</code>, <code>BookingServiceModel</code>, <code>BookingProviderServiceModel</code> or <code>BookingCategoryModel</code> forgets that business. Saves never delete a range of links or hours (gap locks deadlocked concurrent owners, 20 Nov 2026): they lock the service or person row and change only what differs.</li>
         <li><strong>Scheduling:</strong> <code>AvailabilityService</code> (half open intervals, buffers, the profile's hours and holidays).</li>
         <li><strong>Working hours:</strong> each person follows the profile's opening hours (<code>hours_mode</code> profile, the default for a new business; nothing copied, so a change on the profile reaches booking at once) or keeps own hours (<code>own</code>, rows in <code>xs_booking_provider_hours</code>, kept while following). Every reader goes through <code>ProviderWeek</code>. <code>hours_seen</code> fingerprints the opening hours, so the team page and the setup check ask "Follow our opening hours" or "Keep mine" when they change.</li>

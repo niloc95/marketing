@@ -46,6 +46,11 @@ class TeamService
         $this->audit ??= new BookingAudit();
     }
 
+    public function listingId(): int
+    {
+        return $this->listingId;
+    }
+
     // Providers
 
     /** @return list<array<string,mixed>> */
@@ -191,6 +196,8 @@ class TeamService
         helper('slug');
         $data['slug'] = ensure_unique_slug(BookingProviderModel::forBusiness($this->listingId), 'slug', $data['name'], $id, [], 120);
 
+        $linked = isset($data['member_id']) && $data['member_id'] !== null && (int) $data['member_id'] !== (int) ($current['member_id'] ?? 0)
+            ? (int) $data['member_id'] : null;
         if ($id === null) {
             $id = (int) BookingProviderModel::forBusiness($this->listingId)->insert($data);
             $this->audit->record($this->listingId, $accountId, 'provider.created', 'provider', $id, null, ['name' => $data['name']]);
@@ -200,6 +207,10 @@ class TeamService
         }
         // Bookable or not decides which services the profile lists (T28).
         $catalogue->mirrorToProfile($owned);
+        // Whoever signs in as them gets their notices, until they untick it (T36).
+        if ($linked !== null) {
+            (new TeamCover($this->listingId, $this->audit))->addRoute($linked, $id);
+        }
 
         if (! $db->transComplete()) {
             throw new \RuntimeException('The person could not be saved.');
@@ -790,11 +801,17 @@ class TeamService
         ), 'id'));
         $valid = array_values(array_intersect(array_unique(array_map('intval', $memberIds)), $staff));
 
+        $before = $this->staffFor($providerId);
         BookingStaffAssignmentModel::forBusiness($this->listingId)->where('provider_id', $providerId)->delete();
         foreach ($valid as $memberId) {
             BookingStaffAssignmentModel::forBusiness($this->listingId)->insert([
                 'provider_id' => $providerId, 'member_id' => $memberId, 'assigned_by' => $accountId,
             ]);
+        }
+        // Reception newly looking after them also gets their notices (T36).
+        $cover = new TeamCover($this->listingId, $this->audit);
+        foreach (array_diff($valid, $before) as $memberId) {
+            $cover->addRoute($memberId, $providerId);
         }
     }
 
@@ -824,7 +841,7 @@ class TeamService
      *
      * @return array{member_id:?int,errors:array<string,string>}
      */
-    public function invite(array $listing, string $email, string $name, string $role, ?int $providerId, int $invitedByAccountId): array
+    public function invite(array $listing, string $email, string $name, string $role, ?int $providerId, int $invitedByAccountId, ?int $replacesMemberId = null): array
     {
         $email = AccountModel::normaliseEmail($email);
         $name  = trim($name);
@@ -851,14 +868,13 @@ class TeamService
             return ['member_id' => null, 'errors' => ['email' => 'This person is already part of the business.']];
         }
 
-        $token = TokenHash::mint();
-        $data  = [
-            'account_id'        => (int) $account['id'],
-            'role'              => $role,
-            'status'            => BusinessMemberModel::STATUS_INVITED,
-            'invited_by'        => $invitedByAccountId,
-            'invite_token_hash' => TokenHash::hash($token),
-            'invite_expires'    => gmdate('Y-m-d H:i:s', time() + self::INVITE_DAYS * DAY),
+        $data = [
+            'account_id'         => (int) $account['id'],
+            'role'               => $role,
+            'status'             => BusinessMemberModel::STATUS_INVITED,
+            'invited_by'         => $invitedByAccountId,
+            'notices_all'        => $role === BookingPermissions::ADMIN && $replacesMemberId === null ? 1 : 0,
+            'replaces_member_id' => $replacesMemberId,
         ];
         if (is_array($existing)) {
             $memberId = (int) $existing['id'];
@@ -868,22 +884,134 @@ class TeamService
         }
         if ($providerId !== null) {
             BookingProviderModel::forBusiness($this->listingId)->update($providerId, ['member_id' => $memberId]);
+            (new TeamCover($this->listingId, $this->audit))->addRoute($memberId, $providerId);
         }
+
+        $this->sendInvite($listing, $memberId, $invitedByAccountId);
+        $this->audit->record($this->listingId, $invitedByAccountId, 'member.invited', 'member', $memberId, null, ['email' => $email, 'role' => $role, 'replaces' => $replacesMemberId]);
+
+        return ['member_id' => $memberId, 'errors' => []];
+    }
+
+    /**
+     * Send an invited member a fresh link (a new one each time: the old one
+     * stops working).
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function resendInvite(array $listing, int $memberId, int $accountId): ?string
+    {
+        $member = BusinessMemberModel::forBusiness($this->listingId)->find($memberId);
+        if (! is_array($member) || $member['status'] !== BusinessMemberModel::STATUS_INVITED) {
+            return 'There is no invitation waiting for that person.';
+        }
+        $this->sendInvite($listing, $memberId, $accountId);
+        $this->audit->record($this->listingId, $accountId, 'member.invite_resent', 'member', $memberId);
+
+        return null;
+    }
+
+    /** Take back an invitation that was not accepted: the link stops working. */
+    public function cancelInvite(int $memberId, ?int $accountId): ?string
+    {
+        $member = BusinessMemberModel::forBusiness($this->listingId)->find($memberId);
+        if (! is_array($member) || $member['status'] !== BusinessMemberModel::STATUS_INVITED) {
+            return 'There is no invitation waiting for that person.';
+        }
+        BusinessMemberModel::forBusiness($this->listingId)->update($memberId, [
+            'status' => BusinessMemberModel::STATUS_REMOVED, 'invite_token_hash' => null, 'invite_expires' => null, 'replaces_member_id' => null,
+        ]);
+        (new TeamCover($this->listingId, $this->audit))->forget($memberId);
+        $this->audit->record($this->listingId, $accountId, 'member.invite_cancelled', 'member', $memberId);
+
+        return null;
+    }
+
+    /**
+     * An admin changes someone else's email. One account can belong to
+     * several businesses, so their account is never rewritten from here: the
+     * new address gets an invitation with the same role, and accepting it
+     * hands over who they look after, their notices and the practitioner
+     * they sign in as (acceptInvitation()). Until then the old email keeps
+     * working. Their own email they change on their Account page.
+     *
+     * @param array<string,mixed> $listing
+     */
+    public function changeMemberEmail(array $listing, int $memberId, string $email, int $accountId): ?string
+    {
+        $member = BusinessMemberModel::forBusiness($this->listingId)->find($memberId);
+        if (! is_array($member) || $member['status'] === BusinessMemberModel::STATUS_REMOVED) {
+            return 'That person is not part of this business.';
+        }
+        $account = (new AccountService())->find((int) $member['account_id']);
+        if (AccountModel::normaliseEmail($email) === AccountModel::normaliseEmail((string) ($account['email'] ?? ''))) {
+            return 'That is already their email.';
+        }
+        if ($member['status'] === BusinessMemberModel::STATUS_INVITED && $member['replaces_member_id'] === null) {
+            // Nobody signed in with the old address yet: invite the new one instead.
+            $provider = BookingProviderModel::forBusiness($this->listingId)->where('member_id', $memberId)->first();
+            $notices  = (new TeamCover($this->listingId, $this->audit))->noticesFor($memberId);
+            $looks    = (new TeamCover($this->listingId, $this->audit))->looksAfter($memberId);
+            $this->cancelInvite($memberId, $accountId);
+            $result   =$this->invite($listing, $email, (string) ($account['name'] ?? ''), (string) $member['role'], is_array($provider) ? (int) $provider['id'] : null, $accountId);
+            if ($result['errors'] !== []) {
+                return implode(' ', $result['errors']);
+            }
+            $cover = new TeamCover($this->listingId, $this->audit);
+            if ($member['role'] === BookingPermissions::STAFF) {
+                $cover->setLooksAfter((int) $result['member_id'], $looks, $accountId);
+            }
+            $cover->setNotices((int) $result['member_id'], $notices, (int) ($member['notices_all'] ?? 0) === 1, $accountId);
+
+            return null;
+        }
+        $result = $this->invite($listing, $email, (string) ($account['name'] ?? ''), (string) $member['role'], null, $accountId, $memberId);
+
+        return $result['errors'] === [] ? null : implode(' ', $result['errors']);
+    }
+
+    /**
+     * Members waiting for their new email to be confirmed, by the member
+     * they replace.
+     *
+     * @return array<int,array<string,mixed>> old member id => the invited member (with account_email)
+     */
+    public function pendingEmailChanges(): array
+    {
+        $out = [];
+        foreach ($this->members() as $m) {
+            if ($m['status'] === BusinessMemberModel::STATUS_INVITED && $m['replaces_member_id'] !== null) {
+                $out[(int) $m['replaces_member_id']] = $m;
+            }
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $listing */
+    private function sendInvite(array $listing, int $memberId, int $invitedByAccountId): void
+    {
+        $member  = BusinessMemberModel::forBusiness($this->listingId)->find($memberId);
+        $account = (new AccountService())->find((int) $member['account_id']);
+        $token   = TokenHash::mint();
+        BusinessMemberModel::forBusiness($this->listingId)->update($memberId, [
+            'invite_token_hash' => TokenHash::hash($token),
+            'invite_expires'    => gmdate('Y-m-d H:i:s', time() + self::INVITE_DAYS * DAY),
+        ]);
 
         $inviter = (new AccountService())->find($invitedByAccountId);
         $body    = view('emails/booking-invite', [
-            'name'     => $name,
+            'name'     => (string) ($account['name'] ?? ''),
             'business' => (string) $listing['display_name'],
             'inviter'  => (string) ($inviter['name'] ?? ''),
-            'role'     => config('BookingPermissions')->roleLabels[$role],
+            'role'     => config('BookingPermissions')->roleLabels[$member['role']],
             'url'      => site_url_for('za', 'business/invite/' . $token),
             'days'     => self::INVITE_DAYS,
+            'newEmail' => $member['replaces_member_id'] !== null,
         ], ['saveData' => false]);
-        (new Mailer())->send($email, 'Join ' . $listing['display_name'] . ' on WebScheduler Local', $body);
-
-        $this->audit->record($this->listingId, $invitedByAccountId, 'member.invited', 'member', $memberId, null, ['email' => $email, 'role' => $role]);
-
-        return ['member_id' => $memberId, 'errors' => []];
+        (new Mailer())->send((string) $account['email'], $member['replaces_member_id'] !== null
+            ? 'Confirm your new email for ' . $listing['display_name']
+            : 'Join ' . $listing['display_name'] . ' on WebScheduler Local', $body);
     }
 
     /**
@@ -899,27 +1027,59 @@ class TeamService
         if ($member['role'] === BookingPermissions::ADMIN && $role !== BookingPermissions::ADMIN && $this->activeAdminCount() <= 1) {
             return 'The business needs at least one admin.';
         }
-        BusinessMemberModel::forBusiness($this->listingId)->update($memberId, ['role' => $role]);
+        $data = ['role' => $role];
+        if ($role !== $member['role']) {
+            // An admin gets everyone's notices until they untick; nobody else can (T36).
+            $data['notices_all'] = $role === BookingPermissions::ADMIN ? 1 : 0;
+        }
+        BusinessMemberModel::forBusiness($this->listingId)->update($memberId, $data);
+        if ($role !== BookingPermissions::STAFF && $member['role'] === BookingPermissions::STAFF) {
+            BookingStaffAssignmentModel::forBusiness($this->listingId)->where('member_id', $memberId)->delete();
+        }
         $this->audit->record($this->listingId, $accountId, 'member.role_changed', 'member', $memberId, $member['role'], $role);
 
         return null;
     }
 
-    /** Take away someone's access. Their bookable profile, if any, stays. */
-    public function removeMember(int $memberId, ?int $accountId): ?string
+    /**
+     * Take away someone's access. Who they looked after and whose notices
+     * they got go to $handOverTo first, when given (T36). Their practitioner
+     * card, if any, stays: only nobody signs in as them any more.
+     */
+    public function removeMember(int $memberId, ?int $accountId, ?int $handOverTo = null): ?string
     {
         $member = BusinessMemberModel::forBusiness($this->listingId)->find($memberId);
-        if (! is_array($member)) {
+        if (! is_array($member) || $member['status'] === BusinessMemberModel::STATUS_REMOVED) {
             return 'That person is not part of this business.';
         }
         if ($member['role'] === BookingPermissions::ADMIN && $member['status'] === BusinessMemberModel::STATUS_ACTIVE && $this->activeAdminCount() <= 1) {
             return 'The business needs at least one admin.';
         }
+        $cover = new TeamCover($this->listingId, $this->audit);
+        $db    = db_connect();
+        $db->resetTransStatus()->transStart();
+        if ($handOverTo !== null && $handOverTo > 0) {
+            $moved = $cover->handOver($memberId, $handOverTo, $accountId);
+            if ($moved['error'] !== null) {
+                $db->transRollback();
+
+                return $moved['error'];
+            }
+        }
         BusinessMemberModel::forBusiness($this->listingId)->update($memberId, [
             'status' => BusinessMemberModel::STATUS_REMOVED, 'invite_token_hash' => null, 'invite_expires' => null,
         ]);
-        BookingStaffAssignmentModel::forBusiness($this->listingId)->where('member_id', $memberId)->delete();
-        $this->audit->record($this->listingId, $accountId, 'member.removed', 'member', $memberId);
+        $cover->forget($memberId);
+        // A new email waiting to replace them is no longer needed.
+        foreach (BusinessMemberModel::forBusiness($this->listingId)->where('replaces_member_id', $memberId)->where('status', BusinessMemberModel::STATUS_INVITED)->findAll() as $waiting) {
+            BusinessMemberModel::forBusiness($this->listingId)->update((int) $waiting['id'], [
+                'status' => BusinessMemberModel::STATUS_REMOVED, 'invite_token_hash' => null, 'invite_expires' => null, 'replaces_member_id' => null,
+            ]);
+        }
+        if (! $db->transComplete()) {
+            throw new \RuntimeException('Access could not be removed.');
+        }
+        $this->audit->record($this->listingId, $accountId, 'member.removed', 'member', $memberId, null, ['handed_over_to' => $handOverTo]);
 
         return null;
     }
@@ -971,9 +1131,25 @@ class TeamService
         }
 
         $listingId = (int) $invite['listing_id'];
+        $db        = db_connect();
+        $db->resetTransStatus()->transStart();
         BusinessMemberModel::forBusiness($listingId)->update((int) $invite['id'], [
-            'status' => BusinessMemberModel::STATUS_ACTIVE, 'invite_token_hash' => null, 'invite_expires' => null,
+            'status' => BusinessMemberModel::STATUS_ACTIVE, 'invite_token_hash' => null, 'invite_expires' => null, 'replaces_member_id' => null,
         ]);
+        // A new email for someone already here (T36): they take over everything
+        // the old sign in had, and the old one stops.
+        $old = $invite['replaces_member_id'] !== null ? BusinessMemberModel::forBusiness($listingId)->find((int) $invite['replaces_member_id']) : null;
+        if (is_array($old) && $old['status'] !== BusinessMemberModel::STATUS_REMOVED) {
+            (new TeamCover($listingId))->handOver((int) $old['id'], (int) $invite['id'], (int) $invite['account_id'], true);
+            BusinessMemberModel::forBusiness($listingId)->update((int) $old['id'], [
+                'status' => BusinessMemberModel::STATUS_REMOVED, 'invite_token_hash' => null, 'invite_expires' => null,
+            ]);
+            (new TeamCover($listingId))->forget((int) $old['id']);
+            (new BookingAudit())->record($listingId, (int) $invite['account_id'], 'member.email_changed', 'member', (int) $old['id'], null, ['now' => (int) $invite['id']]);
+        }
+        if (! $db->transComplete()) {
+            throw new \RuntimeException('The invitation could not be accepted.');
+        }
         $accounts->markSignedIn((int) $invite['account_id']);
         (new BookingAudit())->record($listingId, (int) $invite['account_id'], 'member.joined', 'member', (int) $invite['id']);
 
@@ -988,7 +1164,6 @@ class TeamService
             ->countAllResults();
     }
 
-    /** @return list<int> */
     /** @return array<string,mixed>|string|null */
     private function tradingHours(): array|string|null
     {
@@ -1001,7 +1176,8 @@ class TeamService
         return $this->tradingHours;
     }
 
-        private function locationIds(): array
+    /** @return list<int> */
+    private function locationIds(): array
     {
         return array_map('intval', array_column((new DirectoryPracticeLocationModel())->forListing($this->listingId), 'id'));
     }

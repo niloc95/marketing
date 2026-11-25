@@ -23,7 +23,7 @@ New top level segments: `business`, `book`, `api`. Check `listing_reserved_slugs
 | `/appointments/create`, `edit/{hash}` | modal inside the calendar, plus `/bookings/appointments/new` without JS | 4 |
 | `/customer-management/*` | `/bookings/customers`, `/bookings/customers/{hash}` | 4 |
 | `/services/*`, `/services/categories` | `/bookings/services`, `/bookings/services/categories` | 2 |
-| `/user-management/*`, `/providers/{id}/schedule`, `/provider-staff/*`, `/staff-providers/*` | `/bookings/team`, `/bookings/team/{id}`, `/bookings/team/{id}/hours` | 2 |
+| `/user-management/*`, `/providers/{id}/schedule`, `/provider-staff/*`, `/staff-providers/*` | `/bookings/team`, `/bookings/team/{id}`, `/bookings/team/{id}/hours`; T36: `/business/team/people/{member}` (+ POST `/notices`, `/looks-after`, `/email`, `/resend`, `/cancel`, `/hand-over`), POST `/business/team/cover`, POST `/business/team/{id}/sign-in`, POST `/business/account/email`, GET `/business/account/email/{token}` | 2 |
 | none (blocked times had no UI) | `/bookings/time-off` | 2 |
 | `/notifications` | `/bookings/notifications` | 6 |
 | `/analytics`, `/analytics/revenue`, `/analytics/customers` | `/bookings/analytics` (`?tab=overview|services|team|customers`, `?period=7d|30d|90d|12m`, `?provider=`; built) | 7 |

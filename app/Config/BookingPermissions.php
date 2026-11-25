@@ -25,7 +25,6 @@ class BookingPermissions extends BaseConfig
     public array $matrix = [
         'settings.manage'      => [self::ADMIN],
         'members.manage'       => [self::ADMIN],
-        'members.manage_staff' => [self::ADMIN, self::PROVIDER],
         'services.manage'      => [self::ADMIN, self::PROVIDER],
         'providers.manage'     => [self::ADMIN, self::PROVIDER],
         'calendar.view_all'    => [self::ADMIN],

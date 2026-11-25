@@ -42,12 +42,16 @@ Migration `2026-11-13-100000_CreateBookingCatalogue`.
 | `xs_booking_providers` | id, listing_id, team_member_id (nullable, SET NULL, **unique**), member_id (nullable, SET NULL), slug, name, title, bio, color, bookable, sort_order, archived_at | `xs_users` with the provider role | **The person is their profile team card (T31).** Every provider that is not archived has its own card (`xs_directory_listing_team`), one provider per card. Name, position, qualifications, registration, focus, bio and photo live on the card, written only by `TeamMemberService` (`syncFromForm()` from the profile form, `saveOne()` from Bookings); the provider keeps colour, bookable, hours, services, sign in, and a copy of the card's name, title and bio for the calendar, messages and snapshots, rewritten on every card save (`TeamService::saveProvider()`, `fromProfileForm()`). A person added in Bookings gets a card hidden from the profile (`show_on_profile` 0). Turning bookings on links the owner's card when one carries the owner's or business's name, otherwise makes one. Migration `2026-11-24-100000_UnifyTeamPeople` gave every provider without a card, or sharing one, its own hidden card. Replaces the one time copy of T28. |
 | `xs_booking_provider_services` | listing_id, provider_id, service_id, created_at | `xs_providers_services` | PK (provider_id, service_id). Carries `listing_id` so it goes through BookingScopedModel like every other table. |
 | `xs_booking_provider_hours` | id, listing_id, provider_id, weekday (1 to 7), start_time, end_time, breaks (JSON), location_id (nullable, SET NULL), service_ids (JSON, null = all) | `xs_business_hours` | Several periods per weekday since T29 (index provider_day, no longer unique), each at its place and for some services; must not overlap. Local time. The form writes no breaks: a break is the gap between two periods (older rows keep theirs). |
-| `xs_booking_staff_assignments` | id, listing_id, provider_id, member_id, assigned_by | `xs_provider_staff_assignments` | Unique (provider_id, member_id). Only active reception members can be assigned. |
+| `xs_booking_staff_assignments` | id, listing_id, provider_id, member_id, assigned_by | `xs_provider_staff_assignments` | Unique (provider_id, member_id). Reception "looks after". Written by TeamService (practitioner side) and TeamCover (person side, hand over). |
+| `xs_booking_notice_routes` | id, listing_id, member_id, provider_id | (new, T36) | Unique (member_id, provider_id). Whose bookings a member gets team notices for; only counts within their scope. Written only by TeamCover. |
 | `xs_booking_blocked_times` | id, listing_id, provider_id (nullable = whole business), start_at, end_at (UTC), reason, created_by | `xs_blocked_times` | Gets a UI (Bookings had none). |
 
 `xs_booking_location_days` is **not built**: a branch is open on the days someone works
 there (`xs_booking_provider_hours.location_id`), which is the same fact stored once.
-`xs_business_members` gained `invite_token_hash` and `invite_expires`.
+`xs_business_members` gained `invite_token_hash` and `invite_expires`, then (T36)
+`notices_all` (admin: everyone's notices) and `replaces_member_id` (an invitation sent
+because an admin changed that member's email). `xs_accounts` gained `pending_email`,
+`email_change_hash` and `email_change_expires` (a person changing their own email).
 
 **Locations.** Bookings' `xs_locations` is not recreated. `location_id` everywhere is
 either null (the profile's own address) or an `xs_directory_practice_locations.id`. Branch

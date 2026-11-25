@@ -64,18 +64,21 @@ class BusinessMemberService
         $existing = $members->where('account_id', $accountId)->first();
 
         if (is_array($existing)) {
-            BusinessMemberModel::forBusiness($listingId)->update((int) $existing['id'], [
-                'role'   => BookingPermissions::ADMIN,
-                'status' => BusinessMemberModel::STATUS_ACTIVE,
-            ]);
+            $data = ['role' => BookingPermissions::ADMIN, 'status' => BusinessMemberModel::STATUS_ACTIVE];
+            if ($existing['role'] !== BookingPermissions::ADMIN || $existing['status'] !== BusinessMemberModel::STATUS_ACTIVE) {
+                // Becoming the admin again: everyone's notices, until they untick (T36).
+                $data['notices_all'] = 1;
+            }
+            BusinessMemberModel::forBusiness($listingId)->update((int) $existing['id'], $data);
 
             return (int) $existing['id'];
         }
 
         return (int) BusinessMemberModel::forBusiness($listingId)->insert([
             'account_id' => $accountId,
-            'role'       => BookingPermissions::ADMIN,
-            'status'     => BusinessMemberModel::STATUS_ACTIVE,
+            'role'        => BookingPermissions::ADMIN,
+            'status'      => BusinessMemberModel::STATUS_ACTIVE,
+            'notices_all' => 1,
         ]);
     }
 

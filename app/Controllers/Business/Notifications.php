@@ -9,6 +9,9 @@ use App\Services\Bookings\BusinessMemberService;
 use App\Services\Bookings\Notifications\DeliveryLog;
 use App\Services\Bookings\Notifications\NotificationCentre;
 use App\Services\Bookings\Notifications\NotificationRules;
+use App\Services\Bookings\TeamCover;
+use App\Services\Bookings\TeamService;
+use Config\BookingPermissions;
 
 /**
  * Notices (/business/notifications): the team member's own list of
@@ -35,6 +38,8 @@ class Notifications extends BaseController
             'statuses'     => AppointmentStatus::options(),
             'sendChannels' => Calendar::sendChannels($context->listingId()),
             'notify' => (int) $context->member()['notify_on_appointments'] === 1,
+            // Whose notices they get (T36): their own ticks, among those they may see.
+            'cover'  => self::cover($context),
             'tz'     => $context->timezone(),
             'canLog' => $context->can('settings.manage'),
             'canOpen' => $context->can('appointments.manage'),
@@ -60,14 +65,42 @@ class Notifications extends BaseController
         return redirect()->to(base_url('business/notifications' . ($this->request->getPost('show') === 'unread' ? '?show=unread' : '')));
     }
 
-    /** The member's own "email me" choice for this business. */
+    /** The member's own "email me" choice for this business, and whose notices they get. */
     public function preferences()
     {
         $context = service('businessContext');
         $on      = $this->request->getPost('notify') !== null;
         (new BusinessMemberService())->setNotify($context->listingId(), (int) $context->member()['id'], $on, $context->accountId());
+        if ($this->request->getPost('routes_shown') === '1') {
+            (new TeamCover($context->listingId()))->setNotices(
+                (int) $context->member()['id'],
+                array_map('intval', (array) $this->request->getPost('provider_ids')),
+                $this->request->getPost('all') === '1',
+                $context->accountId(),
+            );
+        }
 
         return redirect()->to(base_url('business/notifications'))->with('success', $on ? 'You will get these by email.' : 'You will see these here only.');
+    }
+
+    /**
+     * The people this member may get notices for, and which they do.
+     *
+     * @return array{choices:array<int,string>,mine:list<int>,all:bool,isAdmin:bool}
+     */
+    private static function cover($context): array
+    {
+        $cover   = new TeamCover($context->listingId());
+        $member  = $context->member();
+        $names   = array_column((new TeamService($context->listingId()))->providers(), 'name', 'id');
+        $allowed = $cover->canCover($member);
+
+        return [
+            'choices' => array_intersect_key($names, array_flip($allowed)),
+            'mine'    => $cover->noticesFor((int) $member['id']),
+            'all'     => $member['role'] === BookingPermissions::ADMIN && (int) ($member['notices_all'] ?? 0) === 1,
+            'isAdmin' => $member['role'] === BookingPermissions::ADMIN,
+        ];
     }
 
     public function sent()

@@ -19,7 +19,7 @@ class AccountModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'email', 'name', 'password_hash', 'status',
+        'email', 'pending_email', 'email_change_hash', 'email_change_expires', 'name', 'password_hash', 'status',
         'reset_token_hash', 'reset_expires', 'login_token_hash', 'login_expires',
         'password_changed_at', 'last_login_at',
     ];

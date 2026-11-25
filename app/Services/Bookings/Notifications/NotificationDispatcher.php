@@ -144,7 +144,7 @@ class NotificationDispatcher
 
         // Who it goes to, as they are now.
         if ($team) {
-            $recipient = $this->memberEmail((int) $listing['id'], (int) $row['member_id']);
+            $recipient = $this->memberEmail((int) $listing['id'], (int) $row['member_id'], (int) $context['appointment']['provider_id']);
             if ($recipient === null) {
                 return $this->cancel($row, 'That team member no longer gets notices.');
             }
@@ -218,10 +218,14 @@ class NotificationDispatcher
         };
     }
 
-    private function memberEmail(int $listingId, int $memberId): ?string
+    private function memberEmail(int $listingId, int $memberId, int $providerId): ?string
     {
         $member = BusinessMemberModel::forBusiness($listingId)->find($memberId);
         if (! is_array($member) || $member['status'] !== BusinessMemberModel::STATUS_ACTIVE || (int) $member['notify_on_appointments'] !== 1) {
+            return null;
+        }
+        // They may have unticked this person since (T36).
+        if (! (new \App\Services\Bookings\TeamCover($listingId))->receivesFor($memberId, $providerId)) {
             return null;
         }
         $account = (new AccountModel())->find((int) $member['account_id']);

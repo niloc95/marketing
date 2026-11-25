@@ -7,7 +7,9 @@
  * @var string                   $roleLabel
  * @var int                      $minLength
  */
-$new = $invite !== null && empty($invite['password_hash']);
+$new     = $invite !== null && empty($invite['password_hash']);
+// An admin changed their email (T36): same place in the business, new address.
+$replace = $invite !== null && ! empty($invite['replaces_member_id']);
 ?>
 <?= $this->extend('layouts/business') ?>
 <?= $this->section('content') ?>
@@ -17,8 +19,13 @@ $new = $invite !== null && empty($invite['password_hash']);
             <h1 class="mb-2 page-title">This invitation has expired</h1>
             <p class="text-sm text-slate-600 dark:text-slate-300">Invitations work for 7 days and only once. Ask the business to send a new one.</p>
         <?php else: ?>
-            <h1 class="mb-1.5 page-title">Join <?= esc((string) $invite['display_name']) ?></h1>
-            <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">As <?= esc($roleLabel) ?>, signed in with <?= esc((string) $invite['account_email']) ?>.</p>
+            <?php if ($replace): ?>
+                <h1 class="mb-1.5 page-title">Confirm your new email for <?= esc((string) $invite['display_name']) ?></h1>
+                <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">From now on you sign in with <?= esc((string) $invite['account_email']) ?>. Your role (<?= esc($roleLabel) ?>), bookings and notices stay as they are.</p>
+            <?php else: ?>
+                <h1 class="mb-1.5 page-title">Join <?= esc((string) $invite['display_name']) ?></h1>
+                <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">As <?= esc($roleLabel) ?>, signed in with <?= esc((string) $invite['account_email']) ?>.</p>
+            <?php endif ?>
             <form method="post" action="<?= base_url('business/invite/' . $token) ?>">
                 <?= csrf_field() ?>
                 <div class="field">
@@ -26,7 +33,7 @@ $new = $invite !== null && empty($invite['password_hash']);
                     <input id="inv-pw" type="password" name="password" autocomplete="<?= $new ? 'new-password' : 'current-password' ?>"<?= $new ? ' minlength="' . $minLength . '"' : '' ?> required autofocus>
                     <?php if ($new): ?><p class="mt-1 text-xs text-slate-500">At least <?= $minLength ?> characters.</p><?php endif ?>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Join</button>
+                <button type="submit" class="btn btn-primary btn-block"><?= $replace ? 'Use this email' : 'Join' ?></button>
             </form>
         <?php endif ?>
     </div>
