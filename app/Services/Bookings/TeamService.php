@@ -1032,10 +1032,9 @@ class TeamService
             // An admin gets everyone's notices until they untick; nobody else can (T36).
             $data['notices_all'] = $role === BookingPermissions::ADMIN ? 1 : 0;
         }
+        // Who they look after stays: it only counts while they are reception,
+        // so switching to admin and back keeps their people (T36).
         BusinessMemberModel::forBusiness($this->listingId)->update($memberId, $data);
-        if ($role !== BookingPermissions::STAFF && $member['role'] === BookingPermissions::STAFF) {
-            BookingStaffAssignmentModel::forBusiness($this->listingId)->where('member_id', $memberId)->delete();
-        }
         $this->audit->record($this->listingId, $accountId, 'member.role_changed', 'member', $memberId, $member['role'], $role);
 
         return null;
@@ -1112,7 +1111,7 @@ class TeamService
      * Accept an invitation: the membership becomes active and the link stops
      * working. A password is required when the account has none yet.
      *
-     * @return array{account_id:?int,listing_id:?int,error:?string}
+     * @return array{account_id:?int,listing_id:?int,error:?string,new_email?:bool}
      */
     public static function acceptInvitation(string $token, string $password): array
     {
@@ -1153,7 +1152,7 @@ class TeamService
         $accounts->markSignedIn((int) $invite['account_id']);
         (new BookingAudit())->record($listingId, (int) $invite['account_id'], 'member.joined', 'member', (int) $invite['id']);
 
-        return ['account_id' => (int) $invite['account_id'], 'listing_id' => $listingId, 'error' => null];
+        return ['account_id' => (int) $invite['account_id'], 'listing_id' => $listingId, 'error' => null, 'new_email' => is_array($old)];
     }
 
     private function activeAdminCount(): int

@@ -194,6 +194,18 @@ final class BookingTeamPeopleTest extends CIUnitTestCase
         $this->assertSame(0, (int) BusinessMemberModel::forBusiness($this->listingId)->find($this->ownerMember)['notices_all']);
     }
 
+    public function testSwitchingRoleAndBackKeepsWhoReceptionLooksAfter(): void
+    {
+        $desk = $this->member('desk@example.test', 'staff');
+        $this->cover()->setLooksAfter($desk, [$this->drA, $this->drB], null);
+        $team = new TeamService($this->listingId);
+
+        $this->assertNull($team->changeRole($desk, 'admin', null));
+        $this->assertNull($team->changeRole($desk, 'staff', null));
+        $this->assertEqualsCanonicalizing([$this->drA, $this->drB], $this->cover()->looksAfter($desk));
+        $this->assertArrayHasKey($desk, $this->cover()->recipients($this->drA), 'Their notices work again too');
+    }
+
     // Hand over and remove
 
     public function testHandOverMovesEverythingOnceAndLeavesTheSignIn(): void
@@ -245,6 +257,7 @@ final class BookingTeamPeopleTest extends CIUnitTestCase
         preg_match('#business/invite/([a-f0-9]{64})#', (string) $mail['body'], $m);
         $result = TeamService::acceptInvitation($m[1], 'a long enough password 1');
         $this->assertNull($result['error']);
+        $this->assertTrue($result['new_email'], 'The page says the new email is confirmed, not "welcome"');
         $new = (int) BusinessMemberModel::forBusiness($this->listingId)->where('account_id', $result['account_id'])->first()['id'];
 
         $this->assertSame('removed', BusinessMemberModel::forBusiness($this->listingId)->find($desk)['status']);

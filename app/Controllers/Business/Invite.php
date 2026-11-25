@@ -32,6 +32,8 @@ class Invite extends BaseController
         }
         BusinessSession::signIn((int) $result['account_id'], (int) $result['listing_id']);
 
-        return redirect()->to(base_url('business'))->with('success', 'Welcome. You are part of the business now.');
+        return redirect()->to(base_url('business'))->with('success', ! empty($result['new_email'])
+            ? 'Your new email is confirmed. Sign in with it from now on.'
+            : 'Welcome. You are part of the business now.');
     }
 }
