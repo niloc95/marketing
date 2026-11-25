@@ -8,6 +8,7 @@ use App\Services\Bookings\BookingAudit;
 use App\Services\Bookings\BusinessMemberService;
 use App\Services\Bookings\Notifications\DeliveryLog;
 use App\Services\Bookings\Notifications\NotificationCentre;
+use App\Services\Bookings\Notifications\NotificationRules;
 
 /**
  * Notices (/business/notifications): the team member's own list of
@@ -37,6 +38,9 @@ class Notifications extends BaseController
             'tz'     => $context->timezone(),
             'canLog' => $context->can('settings.manage'),
             'canOpen' => $context->can('appointments.manage'),
+            // The team emails this business has switched off (Booking settings, Messages):
+            // Email me too cannot bring those, so the page says so.
+            'teamOff' => array_keys(array_filter((new NotificationRules($context->listingId()))->matrix()['team'], static fn (bool $on): bool => ! $on)),
         ]);
     }
 

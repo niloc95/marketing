@@ -4873,6 +4873,8 @@
   .notice-read-label { @apply sr-only sm:not-sr-only; }
   .notice-read .btn, .notice-sent svg { @apply inline-flex items-center gap-1.5; }
   .notice-sent { @apply flex items-start gap-3 p-5 transition hover:border-primary-300; }
+  .notice-hint { @apply mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200; }
+  .notice-hint svg { @apply mt-0.5 shrink-0; }
   .notice-sent svg { @apply mt-0.5 shrink-0 text-slate-400; }
 
   /* Desktop: the calendar page takes the full width and the window's height

@@ -147,6 +147,30 @@ final class BookingNotificationsTest extends CIUnitTestCase
         (new App\Services\Bookings\BusinessMemberService())->setNotify($this->listingId, (int) $admin['id'], false, null);
         $this->appointments()->moveForCustomer($id, $this->utc('2030-01-12', '10:00'));
         $this->assertSame([], array_values(array_filter($this->queue(), static fn ($r) => $r['event'] === 'rescheduled' && $r['recipient_type'] === 'team')));
+        $moved = BookingInboxModel::forBusiness($this->listingId)->where('event', 'rescheduled')->findAll();
+        $this->assertCount(1, $moved, 'Email me too off still leaves the notice');
+        $this->assertSame((int) $admin['id'], (int) $moved[0]['member_id']);
+    }
+
+    public function testNoticesSayWhenTheBusinessSwitchedTeamEmailsOff(): void
+    {
+        $this->signIn();
+        $this->assertStringNotContainsString('data-team-off', (string) $this->get('business/notifications')->response()->getBody(), 'Team emails on by default');
+
+        (new NotificationRules($this->listingId))->save([], ['pending' => true, 'confirmed' => true], null);
+        $some = (string) $this->get('business/notifications')->response()->getBody();
+        $this->assertStringContainsString('data-team-off', $some);
+        $this->assertStringContainsString('Some team emails are switched off in your booking settings: booking moved to a new time, booking cancelled.', $some);
+        $this->assertStringContainsString(base_url('business/settings/notifications'), $some, 'An admin gets the link');
+
+        (new NotificationRules($this->listingId))->save([], [], null);
+        $none = (string) $this->get('business/notifications')->response()->getBody();
+        $this->assertStringContainsString('Team emails are switched off in your booking settings, so none are sent', $none);
+
+        // Online bookings still reach Notices with every team email off; no team email is queued.
+        $this->bookOnline();
+        $this->assertCount(1, BookingInboxModel::forBusiness($this->listingId)->findAll());
+        $this->assertSame([], array_values(array_filter($this->queue(), static fn ($r) => $r['recipient_type'] === 'team')));
     }
 
     // Sending (Bookings' NotificationQueueDispatcherTest)

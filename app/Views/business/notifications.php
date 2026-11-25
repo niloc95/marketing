@@ -19,6 +19,7 @@
  * @var string                                 $tz
  * @var bool                                   $canLog
  * @var bool                                   $canOpen may open appointments (appointments.manage)
+ * @var list<string>                           $teamOff team email events this business switched off
  * @var list<array<string,mixed>>              $providers
  * @var list<array{value:string,label:string}> $statuses
  * @var array<string,string>                   $sendChannels
@@ -119,6 +120,22 @@ $filterUrl = static fn (string $s): string => base_url('business/notifications' 
             <?= csrf_field() ?>
             <h2 class="section-title">Email me too</h2>
             <label class="flex items-start gap-2 text-sm"><input type="checkbox" name="notify" value="1" class="mt-0.5"<?= $notify ? ' checked' : '' ?>> Email me when a customer books, moves or cancels online</label>
+            <?php if ($teamOff !== []): ?>
+                <?php
+                $all   = count($teamOff) === count(\Config\BookingNotifications::TEAM_EVENTS);
+                $names = array_map(static fn (string $e): string => mb_strtolower(\Config\BookingNotifications::EVENTS[$e]), $teamOff);
+                ?>
+                <p class="notice-hint" data-team-off>
+                    <?= lucide('mail', 'h-4 w-4') ?>
+                    <span>
+                        <?= $all
+                            ? 'Team emails are switched off in your booking settings, so none are sent, even with this ticked.'
+                            : 'Some team emails are switched off in your booking settings: ' . esc(implode(', ', $names)) . '.' ?>
+                        You still see every notice here.
+                        <?php if ($canLog): ?><a class="underline" href="<?= base_url('business/settings/notifications') ?>">Change this in Messages</a>.<?php else: ?>An admin can change this.<?php endif ?>
+                    </span>
+                </p>
+            <?php endif ?>
             <button type="submit" class="btn btn-primary btn-xs mt-4">Save</button>
         </form>
         <?php if ($canLog): ?>
