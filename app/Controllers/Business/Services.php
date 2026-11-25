@@ -3,7 +3,9 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\BusinessLocale;
 use App\Services\Bookings\CatalogueService;
+use App\Services\Bookings\Payments\DepositService;
 use App\Services\Bookings\TeamService;
 use CodeIgniter\Exceptions\PageNotFoundException;
 
@@ -96,6 +98,9 @@ class Services extends BaseController
             'providers'  => (new TeamService($context->listingId()))->providers(),
             'errors'     => flash('errors') ?: [],
             'old'        => flash('old') ?: null,
+            'currency'   => BusinessLocale::currency($context->listing()),
+            // Without an account a deposit is set but not asked (DepositService::depositFor()).
+            'paymentsReady' => DepositService::gatewayFor($context->listingId()) !== null,
         ]);
     }
 }
