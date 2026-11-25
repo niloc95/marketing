@@ -301,6 +301,32 @@ final class BookingCatalogueTest extends CIUnitTestCase
         }
     }
 
+    public function testTheServicePageShowsTheSummaryAndWarnsWhenNobodyGivesIt(): void
+    {
+        [$id, $ownerId] = $this->business();
+        $providerId = (int) (new TeamService($id))->providers()[0]['id'];
+        $catalog    = new CatalogueService($id);
+        $given      = (int) $catalog->saveService(null, ['name' => 'Colour', 'duration_min' => 90, 'price' => '450', 'deposit_pct' => 20, 'delivery_modes' => ['onsite'], 'provider_ids' => [$providerId]], null)['id'];
+        $nobody     = (int) $catalog->saveService(null, ['name' => 'Blow dry', 'duration_min' => 30, 'delivery_modes' => ['onsite'], 'provider_ids' => []], null)['id'];
+
+        $page = $this->signedIn($ownerId, $id)->get('business/services/' . $given);
+        $page->assertOK();
+        $page->assertSee('What customers see');
+        $page->assertSee('1 h 30 min');
+        $page->assertSee('R90 deposit');
+        $page->assertSee('No payment account is on');
+        $page->assertSee('business/services/' . $given . '/archive');
+        $this->assertStringContainsString('data-nobody hidden', $page->getBody());
+
+        $page = $this->signedIn($ownerId, $id)->get('business/services/' . $nobody);
+        $page->assertSee('Nobody offers this service, so customers cannot book it.');
+        $this->assertStringNotContainsString('data-nobody hidden', $page->getBody());
+        $page->assertSee('Nobody yet');
+
+        // A new service has nothing to archive.
+        $this->signedIn($ownerId, $id)->get('business/services/new')->assertDontSee('/archive');
+    }
+
     // Fixtures
 
     /** @param array<string,mixed> $overrides */

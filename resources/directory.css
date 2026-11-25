@@ -4804,6 +4804,65 @@
   .cust-card-actions .btn, .cust-edit .btn, #their-data .btn { @apply inline-flex items-center gap-1.5; }
   .cust-avatar { @apply grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-50 text-sm font-bold text-primary-700 dark:bg-primary-500/15 dark:text-primary-200; }
 
+  /* A service (business/service_form.php): titled sections on the left,
+     a sticky summary of what customers see with the actions on the right.
+     Choices (how it is given, who offers it) are checkbox cards; a ticked
+     card takes the ocean border. Colour dots are .biz-dot. */
+  .svc-layout { @apply grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]; }
+  .svc-main   { @apply min-w-0 space-y-5; }
+  .svc-back   { @apply inline-flex items-center gap-1.5 font-medium text-slate-600 hover:text-slate-900 hover:underline dark:text-slate-300 dark:hover:text-white; }
+  .svc-section { @apply p-5 sm:p-6; }
+  .svc-section-title { @apply flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white; }
+  .svc-section-title svg { @apply shrink-0 text-primary-600 dark:text-primary-300; }
+  .svc-section-hint { @apply mb-4 mt-1 text-sm text-slate-500 dark:text-slate-400; }
+  .svc-chips { @apply mb-2 flex flex-wrap gap-2; }
+  .svc-chip {
+    @apply rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700
+           hover:border-primary-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300;
+  }
+  .svc-chip[aria-pressed="true"] { @apply border-primary-600 bg-primary-50 text-primary-800; }
+  .dark .svc-chip { @apply border-slate-700 bg-transparent text-slate-200; }
+  .dark .svc-chip[aria-pressed="true"] { @apply border-primary-400 bg-primary-500/15 text-primary-100; }
+  /* A box with its unit inside: "R" before the price, "min" or "%" after. */
+  .svc-affix { @apply relative; }
+  .svc-affix-narrow { @apply max-w-[12rem]; }
+  .field .svc-affix:has(.svc-affix-start) input { @apply pl-9; }
+  .field .svc-affix:has(.svc-affix-end) input { @apply pr-12; }
+  .svc-affix-start, .svc-affix-end { @apply pointer-events-none absolute inset-y-0 flex items-center text-sm text-slate-500 dark:text-slate-400; }
+  .svc-affix-start { @apply left-4; }
+  .svc-affix-end   { @apply right-4; }
+  .svc-choices { @apply grid gap-3 sm:grid-cols-2; }
+  .svc-choice {
+    @apply flex cursor-pointer items-center gap-3 rounded-control border border-slate-200 bg-white px-4 py-3 text-sm
+           hover:border-primary-300;
+  }
+  .svc-choice:has(input:checked) { @apply border-primary-600 bg-primary-50/60; }
+  .svc-choice:has(input:focus-visible) { @apply ring-2 ring-primary-300; }
+  .svc-choice input { @apply shrink-0 rounded text-primary-600 focus:ring-0 focus:ring-offset-0; }
+  .svc-choice-icon { @apply shrink-0 text-slate-400; }
+  .svc-choice-name { @apply block font-semibold text-slate-900 dark:text-white; }
+  .svc-choice-sub  { @apply block text-xs text-slate-500 dark:text-slate-400; }
+  .dark .svc-choice { @apply border-slate-700 bg-transparent; }
+  .dark .svc-choice:has(input:checked) { @apply border-primary-400 bg-primary-500/10; }
+  .svc-pick-all { @apply flex gap-1; }
+  .svc-pick-all[hidden] { display: none; }
+  .svc-foot { @apply flex flex-wrap gap-2 lg:hidden; }
+  .svc-side { @apply space-y-4 lg:sticky; top: calc(var(--shell-top, 3.5rem) + 1.5rem); }
+  .svc-summary { @apply p-5; }
+  .svc-summary-label { @apply text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+  .svc-summary-name { @apply mt-1 break-words text-lg font-bold text-slate-900 dark:text-white; }
+  .svc-summary-cat { @apply mt-1 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300; }
+  .svc-summary-cat[hidden] { display: none; }
+  .svc-summary-lines { @apply mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-200; }
+  .svc-summary-lines li { @apply flex items-start gap-2; }
+  .svc-summary-lines li[hidden] { display: none; }
+  .svc-summary-lines svg { @apply mt-0.5 shrink-0 text-slate-400; }
+  .svc-summary-actions { @apply mt-5 hidden space-y-2 lg:block; }
+  .svc-archive { @apply flex flex-col items-start gap-3 p-5; }
+  /* Ocean is near black: a faint ring keeps the dot visible on a dark card. */
+  .dark .svc-layout .biz-dot { @apply ring-1 ring-white/40; }
+  .svc-archive .btn { @apply inline-flex items-center gap-1.5; }
+
   .cust-page { @apply space-y-6; }
   .cust-head { @apply flex flex-wrap items-start gap-4 p-5 sm:p-6; }
   .cust-head .cust-avatar { @apply h-14 w-14 text-base; }

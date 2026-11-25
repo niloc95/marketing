@@ -112,8 +112,9 @@ final class BookingAppSiteTest extends CIUnitTestCase
         ), 'a GBP price never asks a deposit');
         $this->app()->get('business/settings/payments')->assertStatus(404);
         $form = $this->app()->get('business/services/' . $this->serviceId);
-        $form->assertSee('Price in GBP');
-        $form->assertDontSee('Deposit (%)');
+        $this->assertStringContainsString('<span class="svc-affix-start" aria-hidden="true">&pound;</span>', $form->getBody(), 'the price box is in pounds');
+        $this->assertStringNotContainsString('name="deposit_pct"', $form->getBody());
+        $form->assertDontSee('R45');
     }
 
     public function testEachBusinessStaysOnItsOwnHost(): void
