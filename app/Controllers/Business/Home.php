@@ -3,6 +3,7 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\BookingSetupService;
 use App\Services\Bookings\BusinessMemberService;
 use App\Services\Bookings\BusinessSession;
@@ -25,13 +26,21 @@ class Home extends BaseController
         }
         $dashboard = $this->dashboard();
 
+        $canBook = $context->can('appointments.manage');
+
         return view('business/home', [
             'listing' => $context->listing(),
             'member'  => $context->member(),
+            'name'    => (string) ($context->account()['name'] ?? ''),
+            'hour'    => (int) (new \DateTimeImmutable('now', new \DateTimeZone($context->timezone())))->format('G'),
             'alerts'  => $dashboard->alerts($context->member()),
             'waiting' => $dashboard->waiting(),
             'team'    => $dashboard->team(),
             'coming'  => $dashboard->comingUp(),
+            // The appointment details dialog opens here (appointment-host.js).
+            'providers'    => $canBook ? Calendar::providersInScope() : [],
+            'statuses'     => AppointmentStatus::options(),
+            'sendChannels' => $canBook ? Calendar::sendChannels($context->listingId()) : [],
         ] + $this->todayData($dashboard));
     }
 
