@@ -51,7 +51,7 @@ $examples = [
         <li><strong>Welcome pack link:</strong> <code>welcome-pack/{token}</code>, 64 hex, SHA-256 stored in
             <code>xs_directory_listings.welcome_pack_token</code>; no expiry (it opens public facts only), replaced by admin's Send.</li>
         <li><strong>Profile preview:</strong> <code>preview/{token}</code>, private.</li>
-        <li><strong>Bookings:</strong> change or cancel link a 64 hex token stored hashed, rotated on every change; customer page key the customer's 64 character hash; API keys <code>wsk_&lt;prefix&gt;_&lt;secret&gt;</code>, SHA-256 stored.</li>
+        <li><strong>Bookings:</strong> change or cancel link a 64 hex token stored hashed, rotated on every change; customer page key the customer's 64 character hash; a returning patient's code 6 digits and link <code>directory/{slug}/book/returning/{token}</code> 64 hex SHA-256 stored, 10 minutes; the code HMAC SHA-256 with encryption.key, 5 minutes; once (T37); API keys <code>wsk_&lt;prefix&gt;_&lt;secret&gt;</code>, SHA-256 stored.</li>
         <li><strong>Hashes, not values:</strong> apply once keys (HMAC of email and phone), invite suppressions, review email hashes.</li>
     </ul>
 

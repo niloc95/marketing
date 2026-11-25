@@ -74,6 +74,7 @@ class Forms extends BaseConfig
         'book_change'       => ['label' => 'Change or cancel a booking', 'posts' => ['book/(:segment)/reschedule' => 'book/$1', 'book/(:segment)/cancel' => 'book/$1', 'book/customer/(:segment)/(:segment)/reschedule' => 'book/find', 'book/customer/(:segment)/(:segment)/cancel' => 'book/find'], 'pages' => []],
         'book_pay'          => ['label' => 'Pay a booking deposit', 'posts' => ['book/(:segment)/pay' => 'book/$1', 'book/customer/(:segment)/(:segment)/pay' => 'book/find'], 'pages' => []],
         'book_find'         => ['label' => 'Find my booking', 'posts' => ['book/find' => 'book/find']],
+        'book_returning'    => ['label' => 'Booked here before?', 'posts' => ['directory/(:segment)/book/returning' => 'directory/$1/book', 'directory/(:segment)/book/returning/code' => 'directory/$1/book', 'directory/(:segment)/book/returning/forget' => 'directory/$1/book', 'directory/(:segment)/book/returning/(:segment)' => 'directory/$1/book'], 'pages' => []],
         'business_appointment' => ['label' => 'Book an appointment (business)', 'posts' => ['business/appointments/new' => 'business/appointments/new'], 'old' => 'appointment_old'],
         'business_customers'   => ['label' => 'Business customers', 'posts' => ['business/customers/new' => 'business/customers/new', 'business/customers/(:segment)' => 'business/customers/$1#edit', 'business/customers/(:segment)/delete' => 'business/customers/$1#delete', 'business/customers/(:segment)/emails' => 'business/customers/$1'], 'old' => 'customer_old'],
     ];

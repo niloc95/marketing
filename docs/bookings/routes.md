@@ -58,6 +58,7 @@ under `/bookings/api/` so session and CSRF rules stay simple.
 | `/r/{ref}`, `/booking/r/{ref}` | `GET /book/r/{reference}` | 5 |
 | `GET /booking/search?email|phone` | `POST /book/find` (emails the customer their link; same answer whether found or not) | 5 |
 | `/booking/legal` | `GET /directory/{slug}/book/terms` | 5 |
+| none | `POST /directory/{slug}/book/returning` (email a code and link; same answer whether known), `POST …/returning/code`, `POST …/returning/forget`, `GET/POST …/returning/{token}` (the link: GET asks, POST redeems); T37, 25 Nov 2026 | 5 |
 | `/booking/p/*`, `/booking/s/*`, `/booking/discover`, booking sitemap | none (profile, category and discovery pages already cover it) | skip |
 | `/booking/payment/return|cancel` | `POST /book/{token}/pay` and `/book/customer/{hash}/{appointment}/pay` (Paystack checkout, or the PayFast form page, honeypot exempt), `GET /book/paid/{payment hash}` (return and cancel both land here, then on to the customer page); built 5 Nov 2026 | 8 |
 | none | `GET/POST /book/unsubscribe/{token}` (CSRF exempt POST, RFC 8058) | 6 |

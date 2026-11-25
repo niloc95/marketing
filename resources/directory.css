@@ -3845,6 +3845,16 @@
   /* The step titles on the public booking page (Service, With, Choose a time, Your details). */
   .book-step-title { @apply mb-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl; }
   .dark .book-step-title { @apply text-white; }
+
+  /* "Booked here before?" on the details step (book/_returning.php, T37). */
+  .book-returning        { @apply mb-6 rounded-xl border border-primary-100 bg-primary-50/60 p-4 sm:p-5; }
+  .dark .book-returning  { @apply border-slate-700 bg-slate-800/60; }
+  .book-returning-title  { @apply mb-1 text-base font-bold text-slate-900; }
+  .dark .book-returning-title { @apply text-white; }
+  .book-returning-form   { @apply flex flex-col gap-2 sm:flex-row; }
+  .book-returning-form input { @apply min-w-0 flex-1; }
+  .book-returning-code   { @apply text-center font-mono text-lg tracking-[0.4em] sm:max-w-48; }
+  .book-returning-done   { @apply flex flex-wrap items-center gap-3; }
   /* Where each service is given, under its name in the service list. */
   .book-service-places { @apply mt-1 flex flex-col gap-0.5; }
   .book-service-place  { @apply flex items-start gap-1.5 text-xs font-normal text-brand-ocean; }

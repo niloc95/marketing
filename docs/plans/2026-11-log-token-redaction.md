@@ -1,7 +1,9 @@
 # Keep URL keys out of the access logs
 
-Status: **plan, not applied.** Production change: needs the owner's approval, and is
-separate from the returning patients merge. Written 25 Nov 2026.
+Status: **steps 1 to 5 applied on production 25 Nov 2026** (owner's go ahead; backup
+`/root/apache2.bak-20261125-2023`, verified: `/book/[key]`, `/preview/[key]`, no query
+string, port 80 in `redirect-access.log`). Steps 6 and 7 (old logs, still valid keys)
+and the Csp app fix are still open. Written 25 Nov 2026.
 
 ## Why
 

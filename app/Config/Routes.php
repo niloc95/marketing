@@ -709,6 +709,13 @@ $routes->post('directory/(:segment)/book', 'Book::store/$1');
 $routes->get('directory/(:segment)/book/days', 'Book::days/$1');
 $routes->get('directory/(:segment)/book/slots', 'Book::slots/$1');
 $routes->get('directory/(:segment)/book/terms', 'Book::terms/$1');
+// Booked here before? (T37): a code or a link proves a returning patient's
+// email on the details step. The link's GET only asks; the POST redeems.
+$routes->post('directory/(:segment)/book/returning', 'Book::returningSend/$1');
+$routes->post('directory/(:segment)/book/returning/code', 'Book::returningCode/$1');
+$routes->post('directory/(:segment)/book/returning/forget', 'Book::returningForget/$1');
+$routes->get('directory/(:segment)/book/returning/(:segment)', 'Book::returningLink/$1/$2');
+$routes->post('directory/(:segment)/book/returning/(:segment)', 'Book::returningRedeem/$1/$2');
 // The customer's side: literal segments before book/{token}.
 // Stop a business's booking emails: GET asks, POST acts (RFC 8058 one
 // click posts here with no session; CSRF exempt like unsubscribe/*).

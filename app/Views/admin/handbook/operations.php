@@ -58,4 +58,7 @@
         <li><strong>Morning summary</strong> at 05:05 UTC (<code>system:watch --daily</code>): health, yesterday's errors by kind, booking messages, failed jobs, origin certificate days left, disk. Sent even when all is well; if it stops arriving, the watch is down.</li>
         <li><strong>Outside uptime monitor</strong> (owner's account): GET <code>local.webscheduler.co.za/health</code>, <code>local.webscheduler.app/</code> and a booking page every minute; it covers what the server cannot report about itself.</li>
     </ul>
+
+    <h3>Access logs</h3>
+    <p>Apache's <code>cloudflare</code> LogFormat (<code>deploy/apache/conf-available/webscheduler-logformat.conf</code>, live since 25 Nov 2026) logs the client from <code>CF-Connecting-IP</code>, the path with any segment of 32 or more hex characters replaced by <code>[key]</code> (<code>LOG_PATH</code>), and the Referer redacted the same way (<code>LOG_REF</code>, an empty one logs as <code>""</code>). The query string is never logged. Port 80 redirects go to <code>redirect-access.log</code>. Plan, rollback and the open log clean up: <code>docs/plans/2026-11-log-token-redaction.md</code>.</p>
 </div>
