@@ -5,6 +5,7 @@
  */
 export const MSG = {
   loadFailed: 'Could not load the calendar. Check your connection and try again.',
+  appointmentFailed: 'Could not load that appointment. Check your connection and try again.',
   expired: 'This page was open for a long time. Reload it and try again.',
   failed: 'That did not work. Try again.',
   moved: 'Moved.',

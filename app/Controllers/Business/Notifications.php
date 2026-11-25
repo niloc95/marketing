@@ -3,10 +3,12 @@
 namespace App\Controllers\Business;
 
 use App\Controllers\BaseController;
+use App\Services\Bookings\AppointmentStatus;
 use App\Services\Bookings\BookingAudit;
 use App\Services\Bookings\BusinessMemberService;
 use App\Services\Bookings\Notifications\DeliveryLog;
 use App\Services\Bookings\Notifications\NotificationCentre;
+use App\Services\Bookings\Notifications\NotificationRules;
 
 /**
  * Notices (/business/notifications): the team member's own list of
@@ -20,25 +22,42 @@ class Notifications extends BaseController
     {
         $context = service('businessContext');
         $centre  = new NotificationCentre($context->listingId(), (int) $context->member()['id']);
-        $pager   = pager_result((int) $this->request->getGet('page'), 50, $centre->count());
+        $unreadOnly = $this->request->getGet('show') === 'unread';
+        $pager   = pager_result((int) $this->request->getGet('page'), 50, $centre->count($unreadOnly));
 
         return view('business/notifications', [
-            'items'  => $centre->latest(50, ($pager['page'] - 1) * 50),
+            'items'  => $centre->latest(50, ($pager['page'] - 1) * 50, $unreadOnly),
             'pager'  => $pager,
+            'show'   => $unreadOnly ? 'unread' : 'all',
+            'total'  => $centre->count(),
             'unread' => $centre->unread(),
+            'providers'    => Calendar::providersInScope(),
+            'statuses'     => AppointmentStatus::options(),
+            'sendChannels' => Calendar::sendChannels($context->listingId()),
             'notify' => (int) $context->member()['notify_on_appointments'] === 1,
             'tz'     => $context->timezone(),
             'canLog' => $context->can('settings.manage'),
+            'canOpen' => $context->can('appointments.manage'),
+            // The team emails this business has switched off (Booking settings, Messages):
+            // Email me too cannot bring those, so the page says so.
+            'teamOff' => array_keys(array_filter((new NotificationRules($context->listingId()))->matrix()['team'], static fn (bool $on): bool => ! $on)),
         ]);
     }
 
     public function read()
     {
         $context = service('businessContext');
-        $id      = (int) $this->request->getPost('id');
+        // A form posts id; the page script sends JSON.
+        $id      = (int) ($this->request->getPost('id') ?? ($this->request->is('json') ? $this->request->getJsonVar('id') : 0));
         (new NotificationCentre($context->listingId(), (int) $context->member()['id']))->markRead($id > 0 ? $id : null);
 
-        return redirect()->to(base_url('business/notifications'));
+        // Opening a notice's appointment on the page marks it read (appointment-host.js).
+        if ($this->request->isAJAX()) {
+            return $this->response->setHeader('Cache-Control', 'no-store')
+                ->setJSON(['ok' => true, 'csrf' => ['name' => csrf_token(), 'header' => config('Security')->headerName, 'hash' => csrf_hash()]]);
+        }
+
+        return redirect()->to(base_url('business/notifications' . ($this->request->getPost('show') === 'unread' ? '?show=unread' : '')));
     }
 
     /** The member's own "email me" choice for this business. */

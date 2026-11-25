@@ -4754,6 +4754,8 @@
   .appt-actions { @apply flex flex-wrap gap-2; }
   .appt-actions .btn { @apply inline-flex items-center gap-1.5; }
   .appt-note  { @apply mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200; }
+  /* flex beat the hidden attribute: an empty amber bar showed on every movable appointment. */
+  .appt-note[hidden] { @apply hidden; }
   .appt-card  { @apply rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700 dark:bg-slate-800/40; }
   .appt-facts { @apply mt-4 grid gap-3 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-6; }
   .appt-fact  { @apply grid gap-0.5 sm:col-span-2 sm:grid-cols-subgrid; }
@@ -4784,6 +4786,96 @@
   /* A class that sets display must never beat the hidden attribute. */
   .cal [hidden] { display: none !important; }
   .cal-toast { @apply fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white shadow-lg dark:bg-white dark:text-slate-900; }
+
+  /* Customers (business/customers.php, customer.php): cards. A customer
+     card shows the next or last appointment; on a customer's page each
+     appointment is a card that opens the details dialog in place
+     (appointment-host.js). Two columns on a desktop: appointments, then
+     details and their data. */
+  .cust-cards { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-3; }
+  .cust-card { @apply flex flex-col gap-3 p-5; }
+  .cust-card-head { @apply flex items-center gap-3 rounded-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300; }
+  .cust-card-head:hover .cust-card-name { @apply underline; }
+  .cust-card-name { @apply block truncate font-semibold text-slate-900 dark:text-white; }
+  .cust-card-contact { @apply block truncate text-sm text-slate-500 dark:text-slate-400; }
+  .cust-card-line { @apply flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200; }
+  .cust-card-line svg { @apply shrink-0 text-slate-400; }
+  .cust-card-actions { @apply mt-auto flex flex-wrap gap-2; }
+  .cust-card-actions .btn, .cust-edit .btn, #their-data .btn { @apply inline-flex items-center gap-1.5; }
+  .cust-avatar { @apply grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary-50 text-sm font-bold text-primary-700 dark:bg-primary-500/15 dark:text-primary-200; }
+
+  .cust-page { @apply space-y-6; }
+  .cust-head { @apply flex flex-wrap items-start gap-4 p-5 sm:p-6; }
+  .cust-head .cust-avatar { @apply h-14 w-14 text-base; }
+  .cust-name { @apply text-xl font-bold text-slate-900 dark:text-white; }
+  .cust-contact { @apply mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm; }
+  .cust-contact a { @apply inline-flex min-w-0 items-center gap-1.5 break-all text-slate-700 hover:underline dark:text-slate-200; }
+  .cust-contact svg { @apply shrink-0 text-slate-400; }
+  .cust-stats { @apply mt-2 text-sm text-slate-500 dark:text-slate-400; }
+  .cust-optout { @apply mt-0 w-full; }
+  .cust-grid { @apply grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start; }
+  .cust-main, .cust-side { @apply min-w-0 space-y-6; }
+
+  .cust-appts { @apply grid grid-cols-[minmax(0,1fr)] gap-2; }
+  .cust-appt { @apply flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-primary-300 hover:bg-primary-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-primary-400 dark:hover:bg-slate-800; }
+  .cust-appt-date { @apply flex w-12 shrink-0 flex-col items-center rounded-lg bg-slate-100 py-1 leading-none dark:bg-slate-800; }
+  .cust-appt-day { @apply text-lg font-bold text-slate-900 dark:text-white; }
+  .cust-appt-month { @apply mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+  .cust-appt-main { @apply flex min-w-0 flex-1 flex-col; }
+  .cust-appt-when { @apply text-sm font-semibold text-slate-900 dark:text-white; }
+  .cust-appt-what { @apply truncate text-sm text-slate-700 dark:text-slate-200; }
+  .cust-appt-who { @apply truncate text-xs text-slate-500 dark:text-slate-400; }
+  .cust-appt .appt-pill { @apply shrink-0 self-start; }
+  .cust-more > summary { @apply mt-3 cursor-pointer text-sm font-semibold text-primary-700 dark:text-primary-300; }
+  .cust-more[open] > summary { @apply hidden; }
+
+  .cust-edit > summary { @apply flex cursor-pointer list-none items-center justify-between gap-2; }
+  .cust-edit > summary::-webkit-details-marker { display: none; }
+  .cust-edit .cust-edit-close, .cust-edit[open] .cust-edit-open { @apply hidden; }
+  .cust-edit[open] .cust-edit-close { @apply inline-flex; }
+  .cust-edit[open] ~ .cust-facts { @apply hidden; }
+  .cust-facts { @apply mt-4; }
+  .cust-facts dl { @apply grid gap-3 text-sm; }
+  .cust-facts dt { @apply text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+  .cust-facts dd { @apply mt-0.5 break-words text-slate-800 dark:text-slate-100; }
+  .cust-delete { @apply mt-5 border-t border-slate-200 pt-4 dark:border-slate-700; }
+
+  /* Notices (business/notifications.php): cards grouped by day beside
+     Email me too and Sent messages. A card opens its appointment in place
+     (appointment-host.js); unread ones carry a dot and a tinted edge. */
+  .notice-page { @apply grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start; }
+  .notice-main, .notice-side { @apply min-w-0 space-y-6; }
+  .notice-side { @apply lg:sticky; top: calc(var(--shell-top, 3.5rem) + 1.5rem); }
+  .notice-filter { @apply inline-flex gap-1 rounded-full border border-slate-200 bg-white p-1 text-sm dark:border-slate-700 dark:bg-slate-900; }
+  .notice-filter a { @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white; }
+  .notice-filter a span { @apply rounded-full bg-slate-100 px-1.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300; }
+  .notice-filter a[aria-current] { @apply bg-brand-ocean text-white hover:text-white; }
+  .notice-filter a[aria-current] span { @apply bg-white/20 text-white; }
+  .notice-empty { @apply flex flex-col items-center gap-3 py-12 text-center text-sm text-slate-500 dark:text-slate-400; }
+  .notice-day-title { @apply mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400; }
+  .notice-list { @apply grid grid-cols-[minmax(0,1fr)] gap-2; }
+  .notice { @apply flex items-center gap-2 p-0 pr-2 sm:gap-3 sm:pr-3; }
+  .notice.is-unread { @apply border-l-4 border-l-primary-400 dark:border-l-primary-400; }
+  .notice-card { @apply flex min-w-0 flex-1 items-start gap-3 rounded-surface p-3 sm:p-4; }
+  a.notice-card { @apply transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 dark:hover:bg-slate-800/60; }
+  .notice-icon { @apply grid h-10 w-10 shrink-0 place-items-center rounded-xl; }
+  .notice-green { @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300; }
+  .notice-amber { @apply bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300; }
+  .notice-blue  { @apply bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300; }
+  .notice-rose  { @apply bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300; }
+  .notice-text { @apply flex min-w-0 flex-1 flex-col gap-0.5; }
+  .notice-title { @apply text-sm text-slate-800 dark:text-slate-100; }
+  .notice.is-unread .notice-title { @apply font-semibold text-slate-900 dark:text-white; }
+  .notice-body { @apply text-sm text-slate-600 dark:text-slate-300; }
+  .notice-meta { @apply mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400; }
+  .notice-dot { @apply mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-primary-500 dark:bg-primary-300; }
+  .notice-read { @apply shrink-0; }
+  .notice-read-label { @apply sr-only sm:not-sr-only; }
+  .notice-read .btn, .notice-sent svg { @apply inline-flex items-center gap-1.5; }
+  .notice-sent { @apply flex items-start gap-3 p-5 transition hover:border-primary-300; }
+  .notice-hint { @apply mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200; }
+  .notice-hint svg { @apply mt-0.5 shrink-0; }
+  .notice-sent svg { @apply mt-0.5 shrink-0 text-slate-400; }
 
   /* Desktop: the calendar page takes the full width and the window's height
      below the top bar, and the grid fits into it (time-grid.js scales the

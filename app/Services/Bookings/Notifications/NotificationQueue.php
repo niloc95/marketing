@@ -87,9 +87,10 @@ class NotificationQueue
             }
             if ($byCustomer && in_array($event, Catalog::TEAM_EVENTS, true)) {
                 $emailTeam = $rules->enabled($event, 'email', Catalog::TEAM);
-                foreach ($this->teamFor((int) $appointment['provider_id']) as $memberId) {
+                // Everyone who works with this person sees the notice; Email me too adds the email.
+                foreach ($this->teamFor((int) $appointment['provider_id']) as $memberId => $wantsEmail) {
                     $this->toCentre($appointment, $event, $memberId);
-                    if ($emailTeam) {
+                    if ($emailTeam && $wantsEmail) {
                         $added += (int) $this->add($appointment, $event, 'email', $memberId, $marker);
                     }
                 }
@@ -193,15 +194,16 @@ class NotificationQueue
     }
 
     /**
-     * Active team members with notices on who work with this person: admins,
-     * the person's own account, and reception assigned to them.
+     * Active team members who work with this person: admins, the person's
+     * own account, and reception assigned to them. Each gets the notice;
+     * the flag says whether they also asked for the email (Email me too).
      *
-     * @return list<int> member ids
+     * @return array<int,bool> member id => wants the email
      */
     public function teamFor(int $providerId): array
     {
         $members = BusinessMemberModel::forBusiness($this->listingId)
-            ->where('status', BusinessMemberModel::STATUS_ACTIVE)->where('notify_on_appointments', 1)->findAll();
+            ->where('status', BusinessMemberModel::STATUS_ACTIVE)->findAll();
         if ($members === []) {
             return [];
         }
@@ -216,7 +218,7 @@ class NotificationQueue
             if ($m['role'] === \Config\BookingPermissions::ADMIN
                 || (is_array($provider) && (int) ($provider['member_id'] ?? 0) === $id)
                 || in_array($id, $assigned, true)) {
-                $out[] = $id;
+                $out[$id] = (int) $m['notify_on_appointments'] === 1;
             }
         }
 

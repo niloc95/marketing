@@ -102,8 +102,9 @@ class AppointmentService
             return null;
         }
         $serviceId  = (int) $row['service_id'];
-        $service    = (new CatalogueService($this->listingId))->service($serviceId);
-        $providerId = $providerId !== null && $this->inScope($providerId) && in_array($providerId, $service['provider_ids'] ?? [], true)
+        // Someone who does not give the service falls back to the booked
+        // person; provider_id in the answer says whose times these are.
+        $providerId = $providerId !== null && in_array($providerId, $this->moveProviders($row), true)
             ? $providerId
             : (int) $row['provider_id'];
         $own = (int) $row['provider_id'] === $providerId ? (string) $row['start_at'] : '';
@@ -215,6 +216,8 @@ class AppointmentService
         $out['status_label'] = AppointmentStatus::label($out['status']);
         $out['upcoming']     = $this->isUpcoming($row);
         $out['can_move']     = $this->canMove($row);
+        // Who Reschedule may move it to: people in scope who give this service.
+        $out['move_provider_ids'] = $this->moveProviders($row);
         $out['created_at']   = $row['created_at'];
         $out['messages']     = $this->messages($id);
         $out['whatsapp_url'] = $this->whatsappUrl($row);
@@ -629,6 +632,24 @@ class AppointmentService
     private function inScope(int $providerId): bool
     {
         return $this->scope === null || in_array($providerId, $this->scope, true);
+    }
+
+    /**
+     * People an appointment can be moved to: in the member's scope and
+     * giving its service now (a move to anyone else is refused).
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return list<int>
+     */
+    private function moveProviders(array $row): array
+    {
+        $service = (new CatalogueService($this->listingId))->service((int) $row['service_id']);
+
+        return array_values(array_filter(
+            array_map('intval', $service['provider_ids'] ?? []),
+            fn (int $id): bool => $this->inScope($id),
+        ));
     }
 
     /** @param array<string,mixed> $row */

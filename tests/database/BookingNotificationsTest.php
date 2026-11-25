@@ -147,6 +147,30 @@ final class BookingNotificationsTest extends CIUnitTestCase
         (new App\Services\Bookings\BusinessMemberService())->setNotify($this->listingId, (int) $admin['id'], false, null);
         $this->appointments()->moveForCustomer($id, $this->utc('2030-01-12', '10:00'));
         $this->assertSame([], array_values(array_filter($this->queue(), static fn ($r) => $r['event'] === 'rescheduled' && $r['recipient_type'] === 'team')));
+        $moved = BookingInboxModel::forBusiness($this->listingId)->where('event', 'rescheduled')->findAll();
+        $this->assertCount(1, $moved, 'Email me too off still leaves the notice');
+        $this->assertSame((int) $admin['id'], (int) $moved[0]['member_id']);
+    }
+
+    public function testNoticesSayWhenTheBusinessSwitchedTeamEmailsOff(): void
+    {
+        $this->signIn();
+        $this->assertStringNotContainsString('data-team-off', (string) $this->get('business/notifications')->response()->getBody(), 'Team emails on by default');
+
+        (new NotificationRules($this->listingId))->save([], ['pending' => true, 'confirmed' => true], null);
+        $some = (string) $this->get('business/notifications')->response()->getBody();
+        $this->assertStringContainsString('data-team-off', $some);
+        $this->assertStringContainsString('Some team emails are switched off in your booking settings: booking moved to a new time, booking cancelled.', $some);
+        $this->assertStringContainsString(base_url('business/settings/notifications'), $some, 'An admin gets the link');
+
+        (new NotificationRules($this->listingId))->save([], [], null);
+        $none = (string) $this->get('business/notifications')->response()->getBody();
+        $this->assertStringContainsString('Team emails are switched off in your booking settings, so none are sent', $none);
+
+        // Online bookings still reach Notices with every team email off; no team email is queued.
+        $this->bookOnline();
+        $this->assertCount(1, BookingInboxModel::forBusiness($this->listingId)->findAll());
+        $this->assertSame([], array_values(array_filter($this->queue(), static fn ($r) => $r['recipient_type'] === 'team')));
     }
 
     // Sending (Bookings' NotificationQueueDispatcherTest)
@@ -651,6 +675,39 @@ final class BookingNotificationsTest extends CIUnitTestCase
         $this->assertMatchesRegularExpression('/Showing <b>51<\/b> to <b>55<\/b>\s+of <b>55<\/b> messages/', $sent);
         // The filter rides along; page 1 has no page parameter.
         $this->assertStringContainsString('href="' . base_url('business/notifications/sent') . '?channel=email" rel="prev"', $sent);
+    }
+
+    public function testNoticeCardsOpenInPlaceFilterUnreadAndMarkReadByScript(): void
+    {
+        $id = $this->bookOnline();
+        $member = BusinessMemberModel::forBusiness($this->listingId)->first();
+        BookingInboxModel::forBusiness($this->listingId)->insert([
+            'listing_id' => $this->listingId, 'member_id' => (int) $member['id'], 'event' => 'cancelled', 'title' => 'Already seen', 'read_at' => gmdate('Y-m-d H:i:s'),
+        ]);
+        $notice = BookingInboxModel::forBusiness($this->listingId)->where('appointment_id', $id)->first();
+        $this->signIn();
+
+        $page = (string) $this->get('business/notifications')->response()->getBody();
+        $this->assertStringContainsString('data-appt-open="' . $id . '"', $page, 'the card opens the appointment here');
+        $this->assertStringContainsString('data-notice-read="' . $notice['id'] . '"', $page);
+        $this->assertStringContainsString('data-cal-details', $page);
+        $this->assertStringContainsString('data-d-calendar', $page);
+        $this->assertStringContainsString('appt-pill" data-status="pending"', $page, 'the appointment\'s status now');
+        $this->assertStringContainsString('Already seen', $page);
+
+        $unread = (string) $this->get('business/notifications?show=unread')->response()->getBody();
+        $this->assertStringNotContainsString('Already seen', $unread);
+        $this->assertStringContainsString('New booking request from Alice Johnson', $unread);
+
+        // The page script marks one read with JSON and gets the next token back.
+        $res = $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest', 'Content-Type' => 'application/json', config('Security')->headerName => csrf_hash()])
+            ->withBody(json_encode(['id' => (int) $notice['id']]))
+            ->call('post', 'business/notifications/read');
+        $body = json_decode((string) $res->response()->getBody(), true);
+        $this->assertTrue($body['ok']);
+        $this->assertArrayHasKey('csrf', $body);
+        $this->assertNotNull(BookingInboxModel::forBusiness($this->listingId)->find((int) $notice['id'])['read_at']);
+        $this->assertStringContainsString('All read.', (string) $this->get('business/notifications?show=unread')->response()->getBody());
     }
 
     public function testTheBookingsTeamPageCarriesTheProfileTabs(): void
