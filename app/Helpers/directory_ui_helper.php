@@ -280,6 +280,21 @@ if (! function_exists('listing_is_demo')) {
     }
 }
 
+if (! function_exists('listing_demo_takes_bookings')) {
+    /**
+     * A demo profile the owner opened for real test bookings
+     * (`bookings.demoTestBookings`, Config\Bookings). It stays a demo in every
+     * other way: out of discovery, noindex, no structured data, a banner.
+     *
+     * @param array<string,mixed> $listing
+     */
+    function listing_demo_takes_bookings(array $listing): bool
+    {
+        return listing_is_demo($listing)
+            && in_array((int) ($listing['id'] ?? 0), config('Bookings')->demoTestBookingIds(), true);
+    }
+}
+
 if (! function_exists('bookings_in_premium')) {
     /**
      * Whether the paid plan's sales copy may promise online bookings: the

@@ -258,8 +258,9 @@ class Book extends BaseController
         if (honeypot_tripped('book')) {
             return redirect()->to($back)->with('error', 'We could not take this booking. Please try again.');
         }
-        // A demo profile shows the steps and never books, emails or stores anything.
-        if (listing_is_demo($listing)) {
+        // A demo profile shows the steps and never books, emails or stores
+        // anything, unless the owner opened it for test bookings.
+        if (listing_is_demo($listing) && ! listing_demo_takes_bookings($listing)) {
             return redirect()->to($back)->with('book_old', form_typed_fields($post))
                 ->with('error', 'This is a demo profile, so nothing was booked and nobody was contacted.');
         }
@@ -318,8 +319,8 @@ class Book extends BaseController
 
             return redirect()->to($back)->with('returning_error', 'Too many codes asked for from here. Please wait a little, or fill in your details below.');
         }
-        // A demo profile sends nothing and says the same.
-        if (! listing_is_demo($listing)) {
+        // A demo profile sends nothing and says the same (unless open for test bookings).
+        if (! listing_is_demo($listing) || listing_demo_takes_bookings($listing)) {
             (new ReturningPatientService($listing))->send($email, ReturningPatientService::selection($post));
         }
         ReturningPatientService::rememberSent((int) $listing['id'], $email);

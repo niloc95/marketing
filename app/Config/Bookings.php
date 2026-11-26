@@ -75,6 +75,22 @@ class Bookings extends BaseConfig
     /** Months a customer is kept after their last appointment (POPIA, decision D12). */
     public int $retentionMonths = 24;
 
+    /**
+     * Demo profiles that take real test bookings (owner, 26 Nov 2026): profile
+     * ids, comma separated, from .env (`bookings.demoTestBookings = 3171`).
+     * The profile stays is_demo, so it is still out of discovery, noindex and
+     * out of the sitemap; only booking, the returning patient code and the
+     * booking emails work as on a real profile. Empty: every demo only shows
+     * the steps. See listing_demo_takes_bookings().
+     */
+    public string $demoTestBookings = '';
+
+    /** @return list<int> */
+    public function demoTestBookingIds(): array
+    {
+        return array_values(array_filter(array_map('intval', explode(',', $this->demoTestBookings)), static fn (int $id): bool => $id > 0));
+    }
+
     public function googleCalendarOffered(): bool
     {
         return $this->googleClientId !== '' && $this->googleClientSecret !== '';

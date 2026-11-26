@@ -18,7 +18,11 @@ $onBooking = ($where ?? '') === 'booking';
               // says the business is not real. ?>
         <strong>This is a demo profile.</strong>
         It shows what a profile, online booking and vacancies look like on <?= esc(config('Directory')->siteName()) ?>.
-        <?= $onBooking ? 'Try the steps; nothing' : 'Nothing' ?> here is booked or sent, and nobody is contacted.
+        <?php if (listing_demo_takes_bookings($listing)): ?>
+            Bookings here are tests: they are kept, and emails go only to the address you give.
+        <?php else: ?>
+            <?= $onBooking ? 'Try the steps; nothing' : 'Nothing' ?> here is booked or sent, and nobody is contacted.
+        <?php endif; ?>
         <a class="underline" href="<?= base_url('add-profile') ?>">Add your business</a>
     </div>
 <?php if (! $onBooking): ?></div><?php endif; ?>
