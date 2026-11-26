@@ -318,7 +318,7 @@ if (! function_exists('bookings_pitch')) {
      */
     function bookings_pitch(): string
     {
-        return 'Customers book a time with you right on your profile, and you get a calendar for your team, '
+        return 'Patients and customers book a time with you right on your profile, and you get a calendar for your team, '
             . 'reminders and a list of your customers.';
     }
 }

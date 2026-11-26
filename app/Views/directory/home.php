@@ -111,8 +111,9 @@ $moments = [
 if (bookings_in_premium()) {
     $moments['bookings'] = [
         'eyebrow'  => 'Your bookings',
-        'title'    => ['Let customers book', 'right on your profile.'],
-        'text'     => bookings_pitch(),
+        'title'    => ['Patients book a time', 'right on your profile.'],
+        // The return patient line (T37): "Booked here before?" and one emailed code.
+        'text'     => bookings_pitch() . ' Patients who come back book again with one emailed code, their details already filled in.',
         'verified' => true,
     ];
 }

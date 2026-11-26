@@ -460,6 +460,68 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
                 c.restoreState()
                 x += bw + self.GAP
 
+    shot_cap = S("shotcap", REG, 7.5, 10, GREY, alignment=1)
+
+    def shot_image(path, max_px=1400):
+        """A screenshot re-encoded as a JPEG in the cache, at most max_px wide,
+        so a guide full of screens stays a small download."""
+        from PIL import Image as PILImage
+        src = Path(path)
+        dst = cache / f"shot-{src.stem}-{int(src.stat().st_mtime)}.jpg"
+        if not dst.exists():
+            img = PILImage.open(src).convert("RGB")
+            if img.width > max_px:
+                img = img.resize((max_px, round(img.height * max_px / img.width)), PILImage.LANCZOS)
+            img.save(dst, "JPEG", quality=78, optimize=True)
+        return dst
+
+    class Shots(Flowable):
+        """Screenshots side by side at one height, each rounded with a
+        hairline frame and a caption under it. Never cropped: the row is as
+        tall as the widest fit allows, capped at max_h and then centred."""
+
+        RADIUS = 2.5 * mm
+        GAP = 4 * mm
+
+        def __init__(self, items, max_h_mm):
+            super().__init__()
+            from reportlab.lib.utils import ImageReader
+            self.items = [(ImageReader(str(shot_image(p))), cap) for p, cap in items]
+            self.max_h = max_h_mm * mm
+
+        def wrap(self, aw, ah):
+            self.w = aw
+            aspects = [w / h for w, h in (im.getSize() for im, _ in self.items)]
+            usable = aw - self.GAP * (len(aspects) - 1)
+            self.img_h = min(self.max_h, usable / sum(aspects))
+            self.widths = [self.img_h * a for a in aspects]
+            self.caps = [Paragraph(cap, shot_cap) if cap else None for _, cap in self.items]
+            self.cap_h = max([p.wrap(bw, 40 * mm)[1] for p, bw in zip(self.caps, self.widths) if p] or [0])
+            self.h = self.img_h + (self.cap_h + 2 * mm if self.cap_h else 0)
+            return aw, self.h
+
+        def draw(self):
+            c = self.canv
+            total = sum(self.widths) + self.GAP * (len(self.widths) - 1)
+            x = (self.w - total) / 2
+            y = self.h - self.img_h
+            for (im, _), bw, cap in zip(self.items, self.widths, self.caps):
+                c.saveState()
+                p = c.beginPath()
+                p.roundRect(x, y, bw, self.img_h, self.RADIUS)
+                c.clipPath(p, stroke=0, fill=0)
+                c.drawImage(im, x, y, bw, self.img_h)
+                c.restoreState()
+                c.saveState()
+                c.setStrokeColor(colors.HexColor(RULE))
+                c.setLineWidth(0.6)
+                c.roundRect(x, y, bw, self.img_h, self.RADIUS, stroke=1, fill=0)
+                c.restoreState()
+                if cap:
+                    _, ch = cap.wrap(bw, 40 * mm)
+                    cap.drawOn(c, x, y - 2 * mm - ch)
+                x += bw + self.GAP
+
     class VectorQR(Flowable):
         """A QR drawn as vector rectangles.
 
@@ -654,6 +716,23 @@ def build_pdf(out_dir: Path, cache: Path, fonts: dict, profile: str = "web",
 
         if kind == "moment":
             return moment(block)
+
+        if kind == "shots":
+            # [{"path": ..., "caption": ...}, ...] side by side at one height.
+            items = [(s["path"], s.get("caption", "")) for s in block["items"]]
+            missing = [Path(p).name for p, _ in items if not Path(p).exists()]
+            if missing:
+                print(f"  ! screenshots missing: {', '.join(missing)}", file=sys.stderr)
+                ph = Table([[Paragraph("<b>SCREENSHOT MISSING</b>: " + ", ".join(missing), st["cell"])]],
+                           colWidths=[TEXT_W], rowHeights=[min(block.get("max_h_mm", 90), 50) * mm])
+                ph.setStyle(TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(TONE)),
+                    ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor(ORANGE)),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]))
+                return [ph, Spacer(1, 6 * mm)]
+            return [Spacer(1, 2 * mm), Shots(items, block.get("max_h_mm", 90)), Spacer(1, 6 * mm)]
 
         if kind == "lockup":
             return [Lockup(block["size_mm"])]

@@ -32,6 +32,9 @@ foreach ($breakdowns['Newsletter by source'] ?? [] as $b) {
             The consent banner in <code>shared/</code> is a copy of Local's too.</li>
         <li><code>scripts/build.js</code> builds <code>dist/</code> and runs the guards: external host allowlist, banned positioning
             words, contact form checks, secrets.</li>
+        <li>Screenshots in <code>site/assets/screenshots/</code>, all of the Fernwood demo practice. The patient flow strip
+            (home, bookings, how it works, local) and the returning patient section use <code>flow-*.webp</code>, shot on dev by
+            <code>scripts/shoot-bookings-flow.mjs</code> in this repo (Local).</li>
         <li>Clean URL rules live in this repo: <code>deploy/apache/webscheduler.co.za.conf</code>.</li>
     </ul>
 

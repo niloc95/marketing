@@ -38,11 +38,12 @@
     </ul>
 
 <?php elseif ($kind === 'bookings'): ?>
+    <?php // The patient's path, from the profile to coming back (T37). ?>
     <p class="preview-label">Book a time</p>
     <ul class="preview-rows preview-rows-stacked">
-        <li><?= lucide('calendar-days', 'h-4 w-4 shrink-0') ?><span><strong>Consultation</strong>Tomorrow · 09:00 · 09:30 · 11:00</span></li>
-        <li><?= lucide('calendar-days', 'h-4 w-4 shrink-0') ?><span><strong>Follow up visit</strong>Thursday · 14:00 · 15:30</span></li>
-        <li><?= lucide('badge-check', 'h-4 w-4 shrink-0') ?><span><strong>Booked</strong>Reminder sent the day before</span></li>
+        <li><?= lucide('stethoscope', 'h-4 w-4 shrink-0') ?><span><strong>Check up</strong>With your doctor · Tomorrow · 09:00</span></li>
+        <li><?= lucide('badge-check', 'h-4 w-4 shrink-0') ?><span><strong>Booked</strong>Confirmation now, reminder the day before</span></li>
+        <li><?= lucide('rotate-ccw', 'h-4 w-4 shrink-0') ?><span><strong>Booked here before?</strong>One emailed code, details filled in</span></li>
     </ul>
 
 <?php elseif ($kind === 'locations'): ?>
