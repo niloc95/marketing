@@ -81,7 +81,9 @@ class Customers extends BaseController
 
         return view('business/customer', [
             'customer'     => $customer,
-            'old'          => flash('customer_old') ?: $customer,
+            // The edit form starts with answers to today's wording only.
+            'old'          => flash('customer_old') ?: ['custom_fields' => $this->service()->liveAnswers($customer)] + $customer,
+            'answers'      => $this->service()->answerList($customer),
             'errors'       => flash('errors') ?: [],
             'customFields' => $this->service()->customFields(),
             'upcoming'     => $upcoming,
@@ -156,12 +158,15 @@ class Customers extends BaseController
         $q    = mb_substr(trim((string) $this->request->getGet('q')), 0, 100);
         $rows = $q === '' ? [] : $this->service()->list($q, service('businessContext')->providerScope(), 1, 10)['rows'];
 
+        $service = $this->service();
+
+        // custom_fields fills the appointment form: answers to today's wording only.
         return $this->response->setHeader('Cache-Control', 'no-store')->setJSON(['data' => array_map(static fn (array $c): array => [
             'id'            => $c['id'],
             'name'          => $c['name'],
             'email'         => $c['email'],
             'phone'         => $c['phone'],
-            'custom_fields' => $c['custom_fields'],
+            'custom_fields' => $service->liveAnswers($c),
         ], $rows)]);
     }
 

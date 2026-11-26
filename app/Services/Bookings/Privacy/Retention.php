@@ -58,7 +58,7 @@ class Retention
             $db->resetTransStatus()->transStart();
             $db->table('xs_booking_customers')->where('id', $id)->update([
                 'first_name' => 'Former customer', 'last_name' => null, 'email' => null, 'phone' => null,
-                'address' => null, 'notes' => null, 'custom_fields' => null, 'purged_at' => $nowUtc, 'updated_at' => $nowUtc,
+                'address' => null, 'notes' => null, 'custom_fields' => null, 'custom_questions' => null, 'purged_at' => $nowUtc, 'updated_at' => $nowUtc,
             ]);
             $appointments = array_column($db->table('xs_booking_appointments')->select('id')->where('customer_id', $id)->get()->getResultArray(), 'id');
             if ($appointments !== []) {

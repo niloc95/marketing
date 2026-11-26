@@ -205,10 +205,13 @@ class ReturningPatientService
         foreach (['first_name', 'last_name', 'email', 'phone', 'address'] as $field) {
             $out[$field] = (string) ($customer[$field] ?? '');
         }
+        // Only answers to the questions as worded now (liveAnswers()): after
+        // a rename the patient answers again.
+        $live = $customers->liveAnswers($customer);
         foreach ($customers->customFields() as $q) {
-            $answer = $customer['custom_fields'][$q['key']] ?? null;
-            if (! $q['sensitive'] && is_scalar($answer) && (string) $answer !== '') {
-                $out[$q['key']] = (string) $answer;
+            $answer = $live[$q['key']] ?? '';
+            if (! $q['sensitive'] && $answer !== '') {
+                $out[$q['key']] = $answer;
             }
         }
 

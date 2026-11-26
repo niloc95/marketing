@@ -580,6 +580,52 @@ final class BookingReturningTest extends CIUnitTestCase
     }
 
     /** A Verified practice taking bookings, one person all week. @return array{0:int,1:int,2:int} */
+    public function testARenamedQuestionIsNotPrefilledAndHistoryKeepsTheWordingAsked(): void
+    {
+        BookingSettings::for($this->listingId)->save(['booking.custom_field_1_enabled' => '1', 'booking.custom_field_1_title' => 'Medical aid'], null);
+        $slot = $this->firstSlot();
+        $this->post('directory/rosebank-family-practice/book', $this->hidden($slot['start']) + [
+            'first_name' => 'Alice', 'last_name' => 'Johnson', 'email' => 'alice@example.test', 'phone' => '0825551234', 'field_1' => 'Discovery',
+        ])->assertRedirect();
+        $field = db_connect()->table('xs_booking_appointment_fields')->get()->getRowArray();
+        $this->assertSame(['field_1', 'Medical aid', 'Discovery'], [$field['field_key'], $field['question'], $field['value']], 'The answer keeps the question as asked');
+
+        $customers = new \App\Services\Bookings\CustomerService($this->listingId);
+        $returning = new ReturningPatientService($this->listings->find($this->listingId));
+        $this->assertSame('Discovery', $returning->prefill($this->aliceId)['field_1'] ?? null);
+
+        // Only spacing or case changed: still the same question.
+        BookingSettings::for($this->listingId)->save(['booking.custom_field_1_title' => '  medical  AID '], null);
+        $this->assertSame('Discovery', $returning->prefill($this->aliceId)['field_1'] ?? null);
+
+        // Reworded: the old answer is not offered for the new question.
+        BookingSettings::for($this->listingId)->save(['booking.custom_field_1_title' => 'Allergies'], null);
+        $this->assertArrayNotHasKey('field_1', $returning->prefill($this->aliceId));
+        $alice = $customers->find($this->aliceId);
+        $this->assertSame([], $customers->liveAnswers($alice));
+        $this->assertSame([['key' => 'field_1', 'title' => 'Medical aid', 'value' => 'Discovery', 'current' => false]], $customers->answerList($alice), 'Shown under the question it answered');
+        $appointment = (new \App\Services\Bookings\AppointmentService($this->listings->find($this->listingId), null))->detail((int) $field['appointment_id']);
+        $this->assertSame('Medical aid', $appointment['fields'][0]['title'] ?? null);
+
+        // A booking that matches by email: the answer to the new wording replaces the stale one.
+        $customers->findOrCreate(['first_name' => 'Alice', 'email' => 'alice@example.test', 'field_1' => 'Penicillin'], null);
+        $alice = $customers->find($this->aliceId);
+        $this->assertSame(['field_1' => 'Penicillin'], $customers->liveAnswers($alice));
+        $this->assertSame('Allergies', $alice['custom_questions']['field_1']);
+
+        // And an answer to the current wording is kept, as before.
+        $customers->findOrCreate(['first_name' => 'Alice', 'email' => 'alice@example.test', 'field_1' => 'None'], null);
+        $this->assertSame(['field_1' => 'Penicillin'], $customers->liveAnswers($customers->find($this->aliceId)));
+    }
+
+    public function testAnOlderAnswerWithoutAWordingStillPrefills(): void
+    {
+        BookingSettings::for($this->listingId)->save(['booking.custom_field_1_enabled' => '1', 'booking.custom_field_1_title' => 'Medical aid'], null);
+        BookingCustomerModel::forBusiness($this->listingId)->update($this->aliceId, ['custom_fields' => '{"field_1":"Bonitas"}']);
+
+        $this->assertSame('Bonitas', (new ReturningPatientService($this->listings->find($this->listingId)))->prefill($this->aliceId)['field_1'] ?? null);
+    }
+
     private function business(string $slug): array
     {
         $id = (int) $this->listings->insert([

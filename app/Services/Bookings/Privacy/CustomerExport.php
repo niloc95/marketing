@@ -35,7 +35,7 @@ class CustomerExport
         foreach (BookingAppointmentModel::forBusiness($this->listingId)->where('customer_id', $customerId)->orderBy('start_at')->findAll() as $a) {
             $answers = [];
             foreach ((new BookingAppointmentFieldModel())->where('appointment_id', (int) $a['id'])->orderBy('field_key')->findAll() as $f) {
-                $answers[$titles[$f['field_key']] ?? $f['field_key']] = (string) $f['value'];
+                $answers[($f['question'] ?? '') !== '' ? (string) $f['question'] : ($titles[$f['field_key']] ?? $f['field_key'])] = (string) $f['value'];
             }
             $payments = array_map(static fn (array $p): array => [
                 'reference' => $p['reference'], 'gateway' => $p['gateway'], 'amount_cents' => (int) $p['amount_cents'],
@@ -51,7 +51,8 @@ class CustomerExport
 
         $custom = [];
         foreach ((array) $c['custom_fields'] as $key => $value) {
-            $custom[$titles[$key] ?? $key] = $value;
+            $asked = $c['custom_questions'][$key] ?? null;
+            $custom[is_string($asked) && $asked !== '' ? $asked : ($titles[$key] ?? $key)] = $value;
         }
         $optOuts = new OptOuts($this->listingId);
 

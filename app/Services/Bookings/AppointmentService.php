@@ -211,7 +211,7 @@ class AppointmentService
         $labels = array_column((new CustomerService($this->listingId))->customFields(), 'title', 'key');
         $out['fields'] = [];
         foreach ((new BookingAppointmentFieldModel())->where('appointment_id', $id)->orderBy('field_key')->findAll() as $f) {
-            $out['fields'][] = ['key' => $f['field_key'], 'title' => $labels[$f['field_key']] ?? $f['field_key'], 'value' => $f['value']];
+            $out['fields'][] = ['key' => $f['field_key'], 'title' => ($f['question'] ?? '') !== '' ? $f['question'] : ($labels[$f['field_key']] ?? $f['field_key']), 'value' => $f['value']];
         }
         $out['status_label'] = AppointmentStatus::label($out['status']);
         $out['upcoming']     = $this->isUpcoming($row);
@@ -697,11 +697,8 @@ class AppointmentService
         if ($answers === []) {
             return;
         }
-        $rows = [];
-        foreach ($answers as $key => $value) {
-            $rows[] = ['appointment_id' => $appointmentId, 'field_key' => $key, 'value' => $value];
-        }
-        (new BookingAppointmentFieldModel())->insertBatch($rows);
-        (new CustomerService($this->listingId))->rememberAnswers($customerId, $answers);
+        $customers = new CustomerService($this->listingId);
+        (new BookingAppointmentFieldModel())->insertBatch($customers->answerRows($appointmentId, $answers));
+        $customers->rememberAnswers($customerId, $answers);
     }
 }

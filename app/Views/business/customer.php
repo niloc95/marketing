@@ -11,6 +11,7 @@
  * @var array<string,mixed>                                       $old
  * @var array<string,string>                                      $errors
  * @var list<array<string,mixed>>                                 $customFields
+ * @var list<array{key:string,title:string,value:string,current:bool}> $answers each kept answer under the question it answered
  * @var list<array<string,mixed>>                                 $upcoming soonest first
  * @var list<array<string,mixed>>                                 $past     newest first
  * @var list<array<string,mixed>>                                 $providers in the member's scope (Reschedule)
@@ -56,11 +57,10 @@ $facts = array_filter([
     'Phone'   => $phone,
     'Address' => (string) ($customer['address'] ?? ''),
 ]);
-foreach ($customFields as $f) {
-    $v = (string) ($customer['custom_fields'][$f['key']] ?? '');
-    if ($v !== '') {
-        $facts[(string) $f['title']] = $f['type'] === 'checkbox' ? ($v === '1' ? 'Yes' : 'No') : $v;
-    }
+// Each answer under the question it answered (CustomerService::answerList()).
+$types = array_column($customFields, 'type', 'key');
+foreach ($answers ?? [] as $a) {
+    $facts[$a['title']] = ($types[$a['key']] ?? '') === 'checkbox' && $a['current'] ? ($a['value'] === '1' || $a['value'] === 'Yes' ? 'Yes' : 'No') : $a['value'];
 }
 $notes = trim((string) ($customer['notes'] ?? ''));
 ?>
