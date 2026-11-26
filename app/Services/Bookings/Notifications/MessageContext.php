@@ -100,7 +100,8 @@ class MessageContext
         foreach ((new BookingAppointmentFieldModel())->where('appointment_id', $appointmentId)->orderBy('field_key')->findAll() as $f) {
             $field = $byKey[$f['field_key']] ?? null;
             if ($field !== null && ! $field['sensitive'] && trim((string) $f['value']) !== '') {
-                $answers[] = [$field['title'], (string) $f['value']];
+                // The question as the customer was asked it.
+                $answers[] = [($f['question'] ?? '') !== '' ? (string) $f['question'] : $field['title'], (string) $f['value']];
             }
         }
 

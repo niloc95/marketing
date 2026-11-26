@@ -16,7 +16,7 @@ class BookingCustomerModel extends BookingScopedModel
     protected $useTimestamps = true;
     protected $allowedFields = [
         'listing_id', 'hash', 'first_name', 'last_name', 'email', 'phone', 'address', 'notes',
-        'custom_fields', 'purged_at',
+        'custom_fields', 'custom_questions', 'purged_at',
         'login_token_hash', 'login_code_hash', 'login_expires', 'login_code_expires', 'login_tries',
         'login_failures', 'login_failed_at', 'login_sent_at',
     ];

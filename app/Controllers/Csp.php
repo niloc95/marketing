@@ -61,7 +61,7 @@ class Csp extends BaseController
         }
 
         $directive = $this->field($r, 'violated-directive', 'effective-directive');
-        $source    = $this->field($r, 'source-file');
+        $source    = $this->urlField($r, 'source-file');
         $line      = isset($r['line-number']) && is_numeric($r['line-number']) ? ':' . (int) $r['line-number'] : '';
 
         // ua and source say whose the violation is. An inline style blocked on
@@ -70,8 +70,8 @@ class Csp extends BaseController
         log_message('warning', sprintf(
             'CSP violation: directive=%s blocked=%s document=%s source=%s ua=%s enforced=[%s]',
             $directive,
-            $this->field($r, 'blocked-uri'),
-            $this->field($r, 'document-uri'),
+            $this->urlField($r, 'blocked-uri'),
+            $this->urlField($r, 'document-uri'),
             $source === '-' ? '-' : $source . $line,
             $this->browser(),
             $this->enforcedRule($r, $directive)
@@ -171,6 +171,36 @@ class Csp extends BaseController
         // Said nothing about it — so the browser fell back to default-src, or
         // the policy is not the one we think it is.
         return 'absent from policy';
+    }
+
+    /**
+     * A reported address without the parts that can carry a secret: the query
+     * and fragment go (`?invite=`, `?handover=`, search words), and any path
+     * segment of 32 or more hex characters becomes `[key]` (preview, manage,
+     * booking and welcome pack links). The same rule as Apache's LOG_PATH
+     * (deploy/apache/conf-available/webscheduler-logformat.conf). By Nov 2026
+     * this log held 15 lines with live keys. Pinned by CspReportTest.
+     */
+    public static function scrubUrl(string $url): string
+    {
+        $url = preg_replace('/[?#].*$/s', '', $url) ?? '';
+
+        return preg_replace('/(?<=\/)[0-9A-Fa-f]{32,}(?=\/|$)/', '[key]', $url) ?? '';
+    }
+
+    /**
+     * An address field, scrubbed before it is cut to length so a key split at
+     * the cut cannot slip through.
+     *
+     * @param array<string,mixed> $r
+     */
+    private function urlField(array $r, string $key): string
+    {
+        if (! isset($r[$key]) || ! is_scalar($r[$key]) || (string) $r[$key] === '') {
+            return '-';
+        }
+
+        return $this->field([$key => self::scrubUrl((string) $r[$key])], $key);
     }
 
     /**

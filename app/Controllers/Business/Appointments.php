@@ -178,7 +178,7 @@ class Appointments extends BaseController
         $initial   = null;
         $hash      = (string) ($this->request->getGet('customer') ?? '');
         if ($hash !== '' && ($c = $customers->findByHash($hash)) !== null && $customers->visible((int) $c['id'], $scope)) {
-            $initial            = ['id' => (int) $c['id'], 'name' => $c['name'], 'email' => $c['email'], 'phone' => $c['phone'], 'custom_fields' => $c['custom_fields'] ?? []];
+            $initial            = ['id' => (int) $c['id'], 'name' => $c['name'], 'email' => $c['email'], 'phone' => $c['phone'], 'custom_fields' => $customers->liveAnswers($c)];
             $old['customer_id'] = (string) $c['id'];
         }
 

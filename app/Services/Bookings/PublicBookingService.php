@@ -646,11 +646,7 @@ class PublicBookingService
         $id      = (int) $result['id'];
         $answers = $customers->answers($input);
         if ($answers !== []) {
-            $rows = [];
-            foreach ($answers as $key => $value) {
-                $rows[] = ['appointment_id' => $id, 'field_key' => $key, 'value' => $value];
-            }
-            (new \App\Models\Bookings\BookingAppointmentFieldModel())->insertBatch($rows);
+            (new \App\Models\Bookings\BookingAppointmentFieldModel())->insertBatch($customers->answerRows($id, $answers));
             $customers->rememberAnswers($customer['id'], $answers);
         }
         (new BookingAudit())->record($this->listingId, null, 'appointment.booked_online', 'appointment', $id, null, ['start_at' => $start, 'provider_id' => $providerId, 'service_id' => $serviceId, 'deposit_cents' => $deposit]);

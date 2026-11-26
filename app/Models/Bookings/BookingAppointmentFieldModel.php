@@ -16,5 +16,5 @@ class BookingAppointmentFieldModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = false;
-    protected $allowedFields = ['appointment_id', 'field_key', 'value'];
+    protected $allowedFields = ['appointment_id', 'field_key', 'question', 'value'];
 }

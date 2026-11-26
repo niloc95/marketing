@@ -29,7 +29,11 @@ use DateTimeImmutable;
  *   appointments stay in the calendar without the person (the foreign key
  *   sets null; the service and time snapshots remain).
  * - Custom fields 1 to 6 follow `booking.custom_field_*`; answers are kept
- *   in `custom_fields` JSON by field key (`field_1` ...).
+ *   in `custom_fields` JSON by field key (`field_1` ...), with the question
+ *   as it was worded in `custom_questions` (same keys). A renamed question
+ *   no longer passes an older answer off as an answer to the new wording:
+ *   liveAnswers() for anything that fills a form, answerList() to show.
+ *   Older rows without a wording read as asked as worded now.
  */
 class CustomerService
 {
@@ -159,7 +163,7 @@ class CustomerService
             return ['id' => null, 'errors' => $errors];
         }
 
-        $data['custom_fields'] = json_encode(array_merge($existing['custom_fields'] ?? [], $data['custom_fields']), JSON_UNESCAPED_UNICODE);
+        $data = $this->withAnswers($existing, $data['custom_fields'], true) + $data;
         if ($existing === null) {
             $id = (int) BookingCustomerModel::forBusiness($this->listingId)->insert($data + ['hash' => bin2hex(random_bytes(32))]);
             $this->audit->record($this->listingId, $accountId, 'customer.created', 'customer', $id);
@@ -167,7 +171,7 @@ class CustomerService
             BookingCustomerModel::forBusiness($this->listingId)->update($id, $data);
             $this->audit->record($this->listingId, $accountId, 'customer.updated', 'customer', $id, null, array_keys(array_filter(
                 $data,
-                static fn ($v, $k) => $k !== 'custom_fields' && (string) $v !== (string) ($existing[$k] ?? ''),
+                static fn ($v, $k) => ! in_array($k, ['custom_fields', 'custom_questions'], true) && (string) $v !== (string) ($existing[$k] ?? ''),
                 ARRAY_FILTER_USE_BOTH,
             )));
         }
@@ -202,9 +206,10 @@ class CustomerService
                 $patch[$field] = $data[$field];
             }
         }
-        $answers = array_merge($data['custom_fields'], $existing['custom_fields']);
-        if ($answers !== $existing['custom_fields']) {
-            $patch['custom_fields'] = json_encode($answers, JSON_UNESCAPED_UNICODE);
+        // Kept answers win, except one given to a question since reworded.
+        $answers = $this->withAnswers($existing, $data['custom_fields'], false);
+        if (json_decode($answers['custom_fields'], true) !== $existing['custom_fields'] || json_decode($answers['custom_questions'], true) !== $existing['custom_questions']) {
+            $patch += $answers;
         }
         if ($patch !== []) {
             BookingCustomerModel::forBusiness($this->listingId)->update((int) $existing['id'], $patch);
@@ -654,9 +659,114 @@ class CustomerService
         if ($customer === null || $answers === []) {
             return;
         }
-        BookingCustomerModel::forBusiness($this->listingId)->update($customerId, [
-            'custom_fields' => json_encode(array_merge($customer['custom_fields'], $answers), JSON_UNESCAPED_UNICODE),
-        ]);
+        BookingCustomerModel::forBusiness($this->listingId)->update($customerId, $this->withAnswers($customer, $answers, true));
+    }
+
+    /**
+     * Rows for xs_booking_appointment_fields: each answer with the question
+     * as worded when it was asked.
+     *
+     * @param array<string,string> $answers from answers()
+     *
+     * @return list<array{appointment_id:int,field_key:string,question:?string,value:string}>
+     */
+    public function answerRows(int $appointmentId, array $answers): array
+    {
+        $titles = array_column($this->customFields(), 'title', 'key');
+        $rows   = [];
+        foreach ($answers as $key => $value) {
+            $rows[] = ['appointment_id' => $appointmentId, 'field_key' => $key, 'question' => isset($titles[$key]) ? mb_substr($titles[$key], 0, 190) : null, 'value' => $value];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The customer's kept answers to the questions as they are worded now:
+     * what may fill a form. An answer to a question since reworded is left out.
+     *
+     * @param array<string,mixed> $customer from find()
+     *
+     * @return array<string,string>
+     */
+    public function liveAnswers(array $customer): array
+    {
+        $titles = array_column($this->customFields(), 'title', 'key');
+        $out    = [];
+        foreach ((array) ($customer['custom_fields'] ?? []) as $key => $value) {
+            if (isset($titles[$key]) && is_scalar($value) && self::sameQuestion($customer['custom_questions'][$key] ?? null, $titles[$key])) {
+                $out[(string) $key] = (string) $value;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Every kept answer with the question it answered, for showing: the
+     * wording asked, else (older rows) today's. `current` is false for an
+     * answer to a question since reworded or no longer asked.
+     *
+     * @param array<string,mixed> $customer from find()
+     *
+     * @return list<array{key:string,title:string,value:string,current:bool}>
+     */
+    public function answerList(array $customer): array
+    {
+        $titles = array_column($this->customFields(), 'title', 'key');
+        $out    = [];
+        foreach ((array) ($customer['custom_fields'] ?? []) as $key => $value) {
+            $asked = $customer['custom_questions'][$key] ?? null;
+            $title = is_string($asked) && $asked !== '' ? $asked : ($titles[$key] ?? null);
+            if ($title === null || ! is_scalar($value) || (string) $value === '') {
+                continue;
+            }
+            $out[] = ['key' => (string) $key, 'title' => $title, 'value' => (string) $value, 'current' => isset($titles[$key]) && self::sameQuestion($asked, $titles[$key])];
+        }
+
+        return $out;
+    }
+
+    /** Whether an answer kept with wording $asked answers the question worded $now. No wording kept (older rows) counts as the same. */
+    public static function sameQuestion(mixed $asked, string $now): bool
+    {
+        if (! is_string($asked) || $asked === '') {
+            return true;
+        }
+        $norm = static fn (string $t): string => mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($t)));
+
+        return $norm($asked) === $norm($now);
+    }
+
+    /**
+     * custom_fields and custom_questions after adding $answers, each new
+     * answer kept with today's wording. $newWins false keeps an answer
+     * already there, unless its question was reworded since.
+     *
+     * @param array<string,mixed>|null $customer
+     * @param array<string,string>     $answers
+     *
+     * @return array{custom_fields:string,custom_questions:string}
+     */
+    private function withAnswers(?array $customer, array $answers, bool $newWins): array
+    {
+        $titles    = array_column($this->customFields(), 'title', 'key');
+        $fields    = (array) ($customer['custom_fields'] ?? []);
+        $questions = (array) ($customer['custom_questions'] ?? []);
+        foreach ($answers as $key => $value) {
+            $stale = isset($fields[$key]) && ! self::sameQuestion($questions[$key] ?? null, (string) ($titles[$key] ?? ''));
+            if ($newWins || ! isset($fields[$key]) || $stale) {
+                $fields[$key] = $value;
+                if (isset($titles[$key])) {
+                    $questions[$key] = mb_substr($titles[$key], 0, 190);
+                }
+            }
+        }
+
+        return [
+            'custom_fields'    => json_encode((object) $fields, JSON_UNESCAPED_UNICODE),
+            'custom_questions' => json_encode((object) $questions, JSON_UNESCAPED_UNICODE),
+        ];
     }
 
     public static function normalEmail(string $email): ?string
@@ -679,6 +789,7 @@ class CustomerService
     {
         $row['id']            = (int) $row['id'];
         $row['custom_fields'] = json_decode((string) ($row['custom_fields'] ?? ''), true) ?: [];
+        $row['custom_questions'] = json_decode((string) ($row['custom_questions'] ?? ''), true) ?: [];
         $row['name']          = trim($row['first_name'] . ' ' . ($row['last_name'] ?? ''));
 
         return $row;
