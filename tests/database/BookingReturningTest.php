@@ -580,6 +580,26 @@ final class BookingReturningTest extends CIUnitTestCase
     }
 
     /** A Verified practice taking bookings, one person all week. @return array{0:int,1:int,2:int} */
+    public function testAFilledInAnswerNeverShowsInTheHeaderDiscoverBox(): void
+    {
+        // 26 Nov 2026: the header's Discover box inherited the page's $value, so a
+        // returning patient's medical aid showed in it on the booking page.
+        BookingSettings::for($this->listingId)->save(['booking.custom_field_1_enabled' => '1', 'booking.custom_field_1_title' => 'Medical aid'], null);
+        $this->post('directory/rosebank-family-practice/book', $this->hidden($this->firstSlot()['start']) + [
+            'first_name' => 'Alice', 'last_name' => 'Johnson', 'email' => 'alice@example.test', 'phone' => '0825551234', 'field_1' => 'Bonitas',
+        ])->assertRedirect();
+
+        $slot = $this->firstSlot();
+        $code = $this->askForCode($slot['start']);
+        $this->carry()->post('directory/rosebank-family-practice/book/returning/code', $this->hidden($slot['start']) + ['code' => $code])->assertRedirect();
+        $page = (string) $this->carry()->get($this->pageUrl($slot['start']))->response()->getBody();
+
+        $this->assertStringContainsString('Welcome back, Alice.', $page);
+        $this->assertStringContainsString('value="Bonitas"', $page, 'The answer is filled in on the form');
+        $this->assertMatchesRegularExpression('/name="q" value=""/', $page, 'The header box starts empty');
+        $this->assertDoesNotMatchRegularExpression('/name="q" value="[^"]+"/', $page);
+    }
+
     public function testARenamedQuestionIsNotPrefilledAndHistoryKeepsTheWordingAsked(): void
     {
         BookingSettings::for($this->listingId)->save(['booking.custom_field_1_enabled' => '1', 'booking.custom_field_1_title' => 'Medical aid'], null);
