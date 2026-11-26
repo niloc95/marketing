@@ -1,7 +1,27 @@
 # Origin only reachable through Cloudflare
 
-Status: **investigation done, plan not applied.** Production change: needs the owner's
-approval, separate from any app release. Written 25 Nov 2026.
+Status: **web ports already done; SSH still open to all.** Console read by the owner
+26 Nov 2026 (one rule list covers IPv4 and IPv6): HTTP 80 and HTTPS 443 each allow 22
+sources, which is Cloudflare's 15 IPv4 plus 7 IPv6 ranges; SSH 22 allows any IPv4 or
+IPv6 address plus Lightsail browser SSH. Static IPv4 13.203.131.32, IPv6
+2406:da1a:dce:1c00:2aa3:e9dd:6afa:a79. Steps 4 and 5 below are therefore done; step 3
+(SSH) is what is left. Written 25 Nov 2026.
+
+## SSH findings (26 Nov 2026)
+
+- sshd takes keys only (`passwordauthentication no`, `kbdinteractiveauthentication no`,
+  root `without-password`). 1,390 failed tries from 78 addresses in 7 days: noise
+  against keys, but noise worth closing.
+- Accepted logins in 30 days: `ubuntu` from the owner's two home ranges (197.87.x.x and
+  197.90.x.x: the address changes), `ubuntu` from 52.95.x.x (browser SSH), and
+  `mauticexport` from 3.6.x.x, the retired Mautic server, nightly at 23:15 until
+  3 Nov 2026. That account has a forced command (`listing-export.php`) and MySQL user
+  `mautic_export` with SELECT on `xs_directory_listings` and `xs_directory_categories`.
+  Mautic is retired, so it should be removed (lock the account, delete its key, drop the
+  MySQL user), whatever the firewall does.
+- Nothing else connects: the brand site release and every release run from the owner's
+  Mac; the GitHub deploy workflow is dormant.
+- `Config\App::$proxyIPs` matches Cloudflare's published lists exactly.
 
 ## What we know (read only checks, 25 Nov 2026)
 
@@ -28,7 +48,7 @@ a forged `CF-Connecting-IP` from a non Cloudflare address is ignored
 |---|---|---|
 | HTTP 80 | Cloudflare's 15 ranges (cloudflare.com/ips-v4) | Cloudflare's 7 ranges (cloudflare.com/ips-v6) |
 | HTTPS 443 | the same 15 | the same 7 |
-| SSH 22 | the owner's fixed addresses, each as /32, **plus Lightsail browser SSH** (`lightsail-connect`) | none, unless the owner uses IPv6 SSH |
+| SSH 22 | the owner's home ranges (the address changes, so the ISP blocks the last month used, 197.87.0.0/16 and 197.90.0.0/16, or the current /32 if the owner prefers tighter), **plus Lightsail browser SSH** | none, unless the owner uses IPv6 SSH |
 | Anything else | closed | closed |
 
 Keeping browser SSH means a changed home address can never lock us out.
