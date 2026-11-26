@@ -21,7 +21,7 @@
         <li><code>search.discoveryModel</code>, <code>discoveryExpand</code>, <code>discoverySpelling</code>, <code>discoveryLog</code>: the discovery layers.</li>
         <li><code>directory.profileStats</code>: profile statistics.</li>
         <li>Database rollback: <code>migrate:rollback -b N</code> rolls back <em>to</em> batch N; dump first.</li>
-        <li>Demo profile: <code>php spark demo:fernwood</code> builds Fernwood Dental Studio (fictional, is_demo), <code>--owner</code> prints a /business sign in, <code>--sample-bookings</code> adds fictional appointments (refused in production), <code>--remove</code> deletes it.</li>
+        <li>Demo profile: <code>php spark demo:fernwood</code> builds Fernwood Dental Studio (fictional, is_demo), <code>--owner</code> prints a /business sign in, <code>--sample-bookings</code> adds fictional appointments (refused in production), <code>--remove</code> deletes it. <code>bookings.demoTestBookings = 3171</code> in <code>.env</code> (comma separated profile ids) lets a demo take real test bookings and send the booking and returning patient emails, while it stays out of discovery, noindex and out of the sitemap; remove the line to go back to steps only.</li>
     </ul>
 
     <h3>Local dev</h3>

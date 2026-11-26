@@ -86,6 +86,7 @@ final class BookingPublicTest extends CIUnitTestCase
         Events::removeAllListeners('email');
         Services::reset(true);
         $this->restoreEnv();
+        \CodeIgniter\Config\Factories::reset('config');
         parent::tearDown();
     }
 
@@ -109,6 +110,28 @@ final class BookingPublicTest extends CIUnitTestCase
         $this->assertStringNotContainsString('application/ld+json', $profile, 'No structured data for a made up business');
         $this->assertStringContainsString('data-demo-banner', (string) $this->get('directory/salon-lumi/book')->response()->getBody());
 
+        $this->assertStringNotContainsString('salon-lumi', (string) $this->get('directory?q=Salon+Lumi')->response()->getBody(), 'Not in discovery results');
+        $this->assertStringNotContainsString('salon-lumi', (string) $this->get('directory/suggest?q=Salon+Lumi')->response()->getBody(), 'Not in the typeahead');
+        $this->assertStringNotContainsString('salon-lumi', (string) $this->get('sitemap.xml')->response()->getBody(), 'Not in the sitemap');
+    }
+
+    public function testADemoOpenedForTestBookingsBooksButStaysOutOfDiscovery(): void
+    {
+        $this->db->table('directory_listings')->where('id', $this->listingId)->update(['is_demo' => 1]);
+        $this->setEnv('bookings.demoTestBookings', '999999,' . $this->listingId);
+        \CodeIgniter\Config\Factories::reset('config');
+        $slot = $this->firstSlot($this->sarah);
+
+        $res = $this->post('directory/salon-lumi/book', $this->form($slot['start'], $this->sarah));
+        $res->assertRedirect();
+        $this->assertMatchesRegularExpression('#/book/[0-9a-f]{64}\?new=1$#', $res->getRedirectUrl());
+        $this->assertSame(1, BookingAppointmentModel::forBusiness($this->listingId)->countAllResults());
+
+        $page = (string) $this->get('directory/salon-lumi/book')->response()->getBody();
+        $this->assertStringContainsString('Bookings here are tests', $page);
+        $profile = (string) $this->get('directory/salon-lumi')->response()->getBody();
+        $this->assertStringContainsString('noindex', $profile);
+        $this->assertStringNotContainsString('application/ld+json', $profile);
         $this->assertStringNotContainsString('salon-lumi', (string) $this->get('directory?q=Salon+Lumi')->response()->getBody(), 'Not in discovery results');
         $this->assertStringNotContainsString('salon-lumi', (string) $this->get('directory/suggest?q=Salon+Lumi')->response()->getBody(), 'Not in the typeahead');
         $this->assertStringNotContainsString('salon-lumi', (string) $this->get('sitemap.xml')->response()->getBody(), 'Not in the sitemap');
