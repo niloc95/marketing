@@ -55,7 +55,7 @@ $benefits = [
 
         <div class="pricing-grid"<?= $onSignup ? '' : ' data-scroll-reveal' ?>>
             <div class="plan-card pricing-card">
-                <p class="plan-name">Free Practice Profile</p>
+                <p class="plan-name">Free Profile</p>
                 <p class="plan-price"><?= esc(money('0', 'USD')) ?><span class="plan-price-unit">free, always</span></p>
                 <p class="plan-blurb">
                     Everything you need to be found online and contacted. No monthly fee, no subscription
