@@ -35,10 +35,10 @@ $setupLine = $setupPrice !== null ? money($setupPrice, $setupCurrency) . ' once 
 
 $faqs = [
     [
-        'q' => 'Is a practice profile really free?',
+        'q' => 'Does a profile cost anything?',
         'a' => $app
-            ? 'Yes. A practice profile is free, with no monthly fee, no subscription and no obligation. Plus is an optional upgrade.'
-            : 'Yes, for any practice or business with a South African address. No monthly fee, no subscription and no obligation. Verified is an optional upgrade.',
+            ? 'No. A profile costs nothing, with no monthly fee, no subscription and no obligation. Plus is an optional upgrade.'
+            : 'No, for any practice or business with a South African address. No monthly fee, no subscription and no obligation. Verified is an optional upgrade.',
     ],
     [
         'q' => 'Does paying move my practice up the discovery results?',
@@ -75,8 +75,8 @@ if ($paid) {
 <?= seo_meta([
     'title'       => 'Pricing | ' . $siteName,
     'description' => $app
-        ? 'A practice profile on ' . $siteName . ' is free. Plus adds your other locations, your team and the Jobs board' . ($priceLine !== '' ? ', for ' . $priceLine : '') . '.'
-        : 'A practice profile on ' . $siteName . ' is free. Verified' . ($badgeOffered ? ' is ' . $priceLine : ' is an optional upgrade') . ', and we can set up your profile for you.',
+        ? 'A profile on ' . $siteName . ' costs nothing. Plus adds your other locations, your team and the Jobs board' . ($priceLine !== '' ? ', for ' . $priceLine : '') . '.'
+        : 'A profile on ' . $siteName . ' costs nothing. Verified' . ($badgeOffered ? ' is ' . $priceLine : ' is an optional upgrade') . ', and we can set up your profile for you.',
     'canonical'   => $canonical,
     // The same page on both sites, in each one's own currency.
     'alternates'  => 'pricing',
@@ -88,9 +88,9 @@ if ($paid) {
 <section class="hero hero-center">
     <div class="container">
         <span class="eyebrow">Pricing</span>
-        <h1 class="mt-2 text-2xl sm:text-3xl">Free to be discovered. Pay only for the extras.</h1>
+        <h1 class="mt-2 text-2xl sm:text-3xl">Be discovered at no cost. Pay only for the extras.</h1>
         <p class="mt-2 max-w-2xl text-sm text-white/80">
-            Every practice and business gets a free profile. <?= esc($product) ?> is the one optional upgrade<?= $hasYearly ? ', paid monthly or yearly' : '' ?>.
+            Every practice and business gets a profile at no cost. <?= esc($product) ?> is the one optional upgrade<?= $hasYearly ? ', paid monthly or yearly' : '' ?>.
             Paying never changes where you appear in discovery results.
         </p>
     </div>
@@ -138,7 +138,7 @@ if ($paid) {
             <p class="text-sm text-slate-600 dark:text-slate-300">
                 Short on time? Send us your details and we build a complete practice profile for you
                 within <?= (int) $setupDays ?> business days<?= $setupLine !== '' ? ', for <strong>' . esc($setupLine) . '</strong>' : '' ?>.
-                The profile itself stays free.
+                The profile itself costs nothing.
             </p>
             <p class="mt-4"><a class="btn btn-ghost" href="<?= base_url('profile-setup') ?>">See the profile setup service</a></p>
         </div>

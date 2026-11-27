@@ -28,7 +28,7 @@ if ($verificationOffered) {
 <?= $this->section('head') ?>
 <?= seo_meta([
     'title'       => 'Add your practice or business | ' . $siteName,
-    'description' => 'Create a free practice or business profile on ' . $siteName . ' so local patients and customers can discover you, your services and your location. No monthly fee, no subscription.',
+    'description' => 'Add your practice or business to ' . $siteName . ' so local patients and customers can discover you, your services and your location. A profile costs nothing.',
     'canonical'   => base_url('add-profile'),
     'alternates'  => 'add-profile',
 ]) ?>
@@ -95,7 +95,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                     profile goes live either way, whatever the Verified review decides.
                 </p>
             <?php else: ?>
-                <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your practice or business. We'll email you a link to verify and publish your profile. It's free.</p>
+                <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Tell us about your practice or business. We'll email you a link to verify and publish your profile. It costs nothing.</p>
             <?php endif; ?>
 
             <?= view('directory/_profile_setup_offer') ?>
@@ -154,7 +154,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                 <span class="hint">
                                     <?= esc(price_terms($verificationAmount, badge_yearly_price())) ?>. We review your documents first and
                                     only ask for payment if they check out. Nothing to pay now. Cancel any
-                                    time, and your practice profile is free either way.
+                                    time, and your profile costs nothing either way.
                                 </span>
                                 <?php // A span, not a <button>: the <summary> is already the control,
                                       // and nesting a button inside it swallows the click. ?>
@@ -183,13 +183,13 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
                                       // cannot drift from it; and with JS off it still works, where a
                                       // button would have been a dead control. ?>
                                 <a class="btn btn-ghost btn-xs mt-4" data-plan-pick="free"
-                                   href="<?= base_url('add-profile?plan=free') ?>">Remove, keep my profile free</a>
+                                   href="<?= base_url('add-profile?plan=free') ?>">Remove, keep my profile as it is</a>
                             </div>
                         </details>
                         <?php // Outside the <details>, because it has to be readable once the
                               // panel it is talking about has closed. ?>
                         <p class="hint verify-cleared" data-plan-cleared hidden>
-                            Your documents were removed. Your profile stays free.
+                            Your documents were removed. Your profile still costs nothing.
                         </p>
                     </div>
                 <?php endif; ?>
