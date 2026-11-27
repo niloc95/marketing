@@ -143,7 +143,7 @@ $row = static function (array $r, string $col): string {
     </div>
 
     <div class="plan-card<?= $selected === 'free' ? ' plan-card-picked' : '' ?>" data-plan-card="free">
-        <p class="plan-name">Free Practice Profile</p>
+        <p class="plan-name">Free Profile</p>
         <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
         <p class="plan-blurb">
             No monthly fee. No subscription. No obligation. A full profile that customers

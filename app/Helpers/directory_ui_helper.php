@@ -1609,7 +1609,7 @@ if (! function_exists('signup_cta')) {
 
         return $verified
             ? ['url' => base_url('add-profile'), 'label' => 'Get your practice verified', 'verified' => true]
-            : ['url' => base_url('add-profile'), 'label' => 'Create your FREE practice profile', 'verified' => false];
+            : ['url' => base_url('add-profile'), 'label' => 'Add your practice or business', 'verified' => false];
     }
 }
 

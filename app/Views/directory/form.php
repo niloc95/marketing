@@ -17,7 +17,7 @@ if ($verificationOffered) {
     $eyebrow  = 'Your practice profile';
     $headline = 'Be discovered by local customers';
 } else {
-    $eyebrow  = 'Create your FREE practice profile';
+    $eyebrow  = 'Add your practice or business';
     $headline = 'Be discovered by local customers';
 }
 
