@@ -70,6 +70,12 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if (! empty($m['role'])): ?>
                         <p class="team-member-role"><?= esc($m['role']) ?></p>
                     <?php endif; ?>
+                    <?php // Book sits beside the name, in the card's head (owner, 27 Nov
+                          // 2026: at the foot of a long card it read as belonging to
+                          // the next person). ?>
+                    <?php if (isset($m['id'], $bookable[(int) $m['id']])): ?>
+                        <?= view('directory/_team_booking', ['p' => $bookable[(int) $m['id']]], ['saveData' => false]) ?>
+                    <?php endif; ?>
                     <?php // Rich text since 18 Nov 2026, the description's editor and
                           // allowlist later the same day; sanitised again here so a row
                           // written around the service still renders only that
@@ -129,9 +135,6 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                         </div>
                     <?php endif; ?>
 
-                    <?php if (isset($m['id'], $bookable[(int) $m['id']])): ?>
-                        <?= view('directory/_team_booking', ['p' => $bookable[(int) $m['id']]], ['saveData' => false]) ?>
-                    <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -145,11 +148,11 @@ $link        = 'font-medium text-primary-500 dark:text-primary-300 hover:underli
                     <?php if ($p['title'] !== ''): ?>
                         <p class="team-member-role"><?= esc($p['title']) ?></p>
                     <?php endif; ?>
+                    <?= view('directory/_team_booking', ['p' => $p], ['saveData' => false]) ?>
                     <?php $bioHtml = listing_rich_text((string) $p['bio']); ?>
                     <?php if ($bioHtml !== ''): ?>
                         <div class="team-member-bio listing-prose"><?= $bioHtml ?></div>
                     <?php endif; ?>
-                    <?= view('directory/_team_booking', ['p' => $p], ['saveData' => false]) ?>
                 </div>
             </div>
         <?php endforeach; ?>
