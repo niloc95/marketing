@@ -208,7 +208,7 @@ class CommunicationsService
         if (empty($campaign['sequence'])) {
             return [[
                 'step' => 1, 'subject' => (string) $campaign['subject'], 'body' => (string) $campaign['body'],
-                'delay_days' => 0, 'button' => $template['button'] ?? ['Open my profile', 'business'], 'extras' => [],
+                'delay_days' => 0, 'button' => $template['button'] ?? ['Open my profile', 'business'], 'extras' => [], 'stats' => false,
             ]];
         }
 
@@ -220,6 +220,7 @@ class CommunicationsService
                 'delay_days' => (int) $row['delay_days'],
                 'button' => $template['steps'][$n - 1]['button'] ?? ['Open my profile', 'business'],
                 'extras' => $template['steps'][$n - 1]['extras'] ?? [],
+                'stats'  => (bool) ($template['steps'][$n - 1]['stats'] ?? false),
             ];
         }
 
@@ -682,7 +683,7 @@ class CommunicationsService
     /** The campaign as the renderer wants one step of it. */
     private static function asStep(array $campaign, array $step): array
     {
-        return ['subject' => $step['subject'], 'body' => $step['body'], 'button' => $step['button'], 'extras' => $step['extras'] ?? []] + $campaign;
+        return ['subject' => $step['subject'], 'body' => $step['body'], 'button' => $step['button'], 'extras' => $step['extras'] ?? [], 'stats' => $step['stats'] ?? false] + $campaign;
     }
 
     /**

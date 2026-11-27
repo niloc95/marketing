@@ -513,6 +513,8 @@ is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log)
 - **Extra links** per step (`extras`: `demo_profile`, `demo_booking`, `doc:<key>`) render as a
   "See it for yourself" box, co.za profiles only (Fernwood and both guides are South African);
   `CampaignRenderer::extras()` drops anything missing. Admin edits wording, not links.
+- **Stats box**: a step with `stats` (A1, B1) shows 30 day views and times shown in searches
+  (own appearances + Google impressions), `CampaignRenderer::stats()`; zeros left out.
 - **SES bounces**: `POST /hooks/ses` (`SesNotificationService`), off until `ses.snsTopicArn`;
   SNS signature + topic checked; hard bounce or complaint → `MarketingConsentService::suppress()`.
 - **No bulk send to production without the owner's OK**, the POPIA basis and an SES

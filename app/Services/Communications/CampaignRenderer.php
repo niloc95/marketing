@@ -5,6 +5,7 @@ namespace App\Services\Communications;
 use App\Libraries\TokenHash;
 use App\Services\DirectoryListingMutationService;
 use App\Services\GoogleDataService;
+use App\Services\ListingStatsService;
 use App\Services\MarketingConsentService;
 use Config\Documents;
 use Config\Sites;
@@ -77,6 +78,7 @@ class CampaignRenderer
             'signIn'      => $target === 'signin',
             'claim'       => $target === 'claim',
             'extras'      => $this->extras((array) ($campaign['extras'] ?? []), $listing),
+            'stats'       => ! empty($campaign['stats']) ? $this->stats($id) : null,
             'claimDays'   => $config->claimLinkDays,
         ], ['saveData' => false]);
 
@@ -184,6 +186,28 @@ class CampaignRenderer
         }
 
         return $out;
+    }
+
+    /**
+     * The profile's last APPEARANCE_DAYS days for a step's stats box: views,
+     * and times shown in searches (our Discover results plus Google
+     * impressions). Null when both are 0; never throws.
+     *
+     * @return array{days:int,views:int,searches:int}|null
+     */
+    public function stats(int $listingId): ?array
+    {
+        $to   = date('Y-m-d');
+        $from = date('Y-m-d', strtotime('-' . self::APPEARANCE_DAYS . ' days'));
+        try {
+            $own = (new ListingStatsService())->totals($listingId, $from, $to);
+        } catch (\Throwable) {
+            $own = ['views' => 0, 'appearances' => 0];
+        }
+        $google = $this->appearances($listingId);
+        $out    = ['days' => self::APPEARANCE_DAYS, 'views' => (int) $own['views'], 'searches' => (int) $own['appearances'] + $google];
+
+        return $out['views'] + $out['searches'] > 0 ? $out : null;
     }
 
     /** A published library PDF on co.za, with the ?v= stamp /resources uses, or null. */

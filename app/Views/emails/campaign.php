@@ -13,6 +13,7 @@
  * @var bool                      $claim       the button opens the claim page
  * @var int                       $claimDays   how long a claim link works
  * @var list<array{0:string,1:string}> $extras  "See it for yourself" links [label, url]
+ * @var array{days:int,views:int,searches:int}|null $stats the profile's last days, or null
  */
 ?>
 <?= $this->extend('emails/_layout') ?>
@@ -21,6 +22,26 @@
         <?php foreach ($paragraphs as $p): ?>
             <p style="font-size:15px;line-height:1.6"><?= esc($p) ?></p>
         <?php endforeach; ?>
+        <?php if (! empty($stats)): ?>
+            <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:18px 0 4px;border-collapse:separate;border-spacing:0">
+                <tr><td colspan="3" style="font-size:13px;color:#64748b;padding:0 0 6px">Your profile in the last <?= (int) $stats['days'] ?> days</td></tr>
+                <tr>
+                    <?php if ($stats['views'] > 0): ?>
+                        <td style="padding:12px 14px;background:#f1f5f9;border-radius:10px;width:50%">
+                            <div style="font-size:24px;font-weight:800;color:#003049"><?= esc(number_format($stats['views'], 0, '.', ' ')) ?></div>
+                            <div style="font-size:13px;color:#475569">profile <?= $stats['views'] === 1 ? 'view' : 'views' ?></div>
+                        </td>
+                    <?php endif; ?>
+                    <?php if ($stats['views'] > 0 && $stats['searches'] > 0): ?><td style="width:8px"></td><?php endif; ?>
+                    <?php if ($stats['searches'] > 0): ?>
+                        <td style="padding:12px 14px;background:#f1f5f9;border-radius:10px;width:50%">
+                            <div style="font-size:24px;font-weight:800;color:#003049"><?= esc(number_format($stats['searches'], 0, '.', ' ')) ?></div>
+                            <div style="font-size:13px;color:#475569"><?= $stats['searches'] === 1 ? 'time' : 'times' ?> shown in searches</div>
+                        </td>
+                    <?php endif; ?>
+                </tr>
+            </table>
+        <?php endif; ?>
         <p style="margin:22px 0">
             <?= email_button($button[1], $button[0]) ?>
         </p>

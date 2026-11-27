@@ -268,6 +268,46 @@ final class CampaignSequenceTest extends CIUnitTestCase
         $this->assertStringContainsString('profile-guide.pdf?v=', $html);
     }
 
+    // ------------------------------------------------------------ stats box
+
+    public function testA1AndB1ShowViewsAndSearchesFromTheLastThirtyDays(): void
+    {
+        $id = $this->listing();
+        $db = db_connect();
+        $db->table('directory_listing_stats')->insertBatch([
+            ['listing_id' => $id, 'day' => date('Y-m-d', strtotime('-2 days')), 'views' => 40, 'appearances' => 300],
+            ['listing_id' => $id, 'day' => date('Y-m-d', strtotime('-10 days')), 'views' => 2, 'appearances' => 20],
+            ['listing_id' => $id, 'day' => date('Y-m-d', strtotime('-60 days')), 'views' => 999, 'appearances' => 999],
+        ]);
+        $db->table('directory_listing_search')->insert(['listing_id' => $id, 'day' => date('Y-m-d', strtotime('-5 days')), 'impressions' => 1000, 'clicks' => 3]);
+        $svc = new CommunicationsService();
+
+        $claim = $svc->find($this->draftOf($svc, 'claim_sequence'));
+        $a1    = strip_tags($svc->preview($claim, $id, 1)['html']);
+        $this->assertStringContainsString('Your profile in the last 30 days', $a1);
+        $this->assertMatchesRegularExpression('/42\s+profile views/', $a1);
+        $this->assertMatchesRegularExpression('/1 320\s+times shown in searches/', $a1, 'Discover plus Google');
+        $this->assertStringNotContainsString('Your profile in the last', strip_tags($svc->preview($claim, $id, 2)['html']));
+
+        $b1 = strip_tags($svc->preview($svc->find($this->draftOf($svc, 'verified_sequence')), $id, 1)['html']);
+        $this->assertMatchesRegularExpression('/42\s+profile views/', $b1);
+    }
+
+    public function testNoStatsBoxForAProfileWithNothingCounted(): void
+    {
+        $id   = $this->listing();
+        $db   = db_connect();
+        $svc  = new CommunicationsService();
+        $html = strip_tags($svc->preview($svc->find($this->draftOf($svc, 'claim_sequence')), $id, 1)['html']);
+        $this->assertStringNotContainsString('Your profile in the last', $html);
+        $this->assertStringNotContainsString(' 0 ', $html);
+
+        $db->table('directory_listing_stats')->insert(['listing_id' => $id, 'day' => date('Y-m-d'), 'views' => 1, 'appearances' => 0]);
+        $html = strip_tags($svc->preview($svc->find($this->draftOf($svc, 'claim_sequence')), $id, 1)['html']);
+        $this->assertMatchesRegularExpression('/1\s+profile view\b/', $html);
+        $this->assertStringNotContainsString('shown in searches', $html, 'a 0 is left out');
+    }
+
     // ------------------------------------------------------------ claim page
 
     public function testOpeningTheClaimLinkChangesNothingAndConfirmingClaims(): void

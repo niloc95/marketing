@@ -28,6 +28,11 @@ use CodeIgniter\Config\BaseConfig;
  * - business: /business on the profile's own site
  * - profile: the public profile page
  *
+ * A step with `stats` (A1, B1; owner 27 Nov 2026) shows the profile's last
+ * 30 days above the button: profile views, and times shown in searches
+ * (Discover results plus Google impressions). A number that is 0 is left
+ * out, and the box with it when both are, so nobody reads "0 times".
+ *
  * Extra links under the button (a sequence step's `extras`, owner 27 Nov
  * 2026, "See it for yourself"), co.za profiles only: the demo profile and
  * both guides are South African, so an .app email has no box.
@@ -89,6 +94,7 @@ class Campaigns extends BaseConfig
             'steps'    => [
                 [
                     'subject'    => 'Your {noun} profile on {site}',
+                    'stats'      => true,
                     'extras'     => [['An example practice profile', 'demo_profile'], ['Profile guide (PDF)', 'doc:profile-guide']],
                     'delay_days' => 0,
                     'button'     => ['Claim my profile', 'claim'],
@@ -136,6 +142,7 @@ class Campaigns extends BaseConfig
             'steps'    => [
                 [
                     'subject'    => 'Thank you for claiming your profile',
+                    'stats'      => true,
                     'extras'     => [['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 2,
                     'button'     => ['See what {plan} adds', 'upgrade'],
