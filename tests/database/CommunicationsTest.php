@@ -226,7 +226,8 @@ final class CommunicationsTest extends CIUnitTestCase
 
         $body = (string) ($this->email->archive['body'] ?? '');
         $this->assertStringContainsString('Dr Thandi Mokoena has a practice profile', $body);
-        $this->assertStringContainsString('Lenmed hospital group', $body);
+        $this->assertStringNotContainsString('Lenmed', $body, 'no "we created it from" line (owner, 27 Nov 2026)');
+        $this->assertStringNotContainsString('We created it', $body);
         $this->assertStringContainsString('/claim/', $body, 'a live claim page link');
         $this->assertStringNotContainsString('/manage/', $body, 'never a link that signs in on GET');
         $this->assertStringNotContainsString('appeared', $body, 'no "0 times in Google"');

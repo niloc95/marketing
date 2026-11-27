@@ -218,6 +218,7 @@ final class CampaignSequenceTest extends CIUnitTestCase
         $page->assertStatus(200);
         $page->assertSee('Is this your practice?');
         $page->assertSee('Dr Claim Test');
+        $page->assertDontSee('We created');
         $page->assertSee('noindex');
         $this->assertSame(0, db_connect()->table('business_members')->where('listing_id', $id)->countAllResults(), 'a scanner opening the link claims nothing');
         $this->assertNull((new DirectoryListingModel())->find($id)['claimed_at']);

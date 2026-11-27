@@ -94,8 +94,6 @@ class Claim extends BaseController
     {
         $category = db_connect()->table('directory_categories')->select('name')
             ->where('id', (int) ($listing['category_id'] ?? 0))->get()->getRowArray();
-        $source  = (string) ($listing['signup_source'] ?? '');
-        $config  = config('Campaigns');
 
         if ($error !== null) {
             form_outcome('invalid');
@@ -108,7 +106,6 @@ class Claim extends BaseController
             'token'    => $token,
             'state'    => $state,
             'error'    => $error,
-            'source'   => $config->sources[$source] ?? $config->defaultSource,
             'greeting' => CampaignRenderer::greeting($listing),
         ]);
     }
@@ -116,7 +113,7 @@ class Claim extends BaseController
     private function invalid()
     {
         return $this->response->setStatusCode(404)->setBody(view('directory/claim', [
-            'listing' => null, 'public' => null, 'category' => '', 'token' => '', 'state' => 'invalid', 'error' => null, 'source' => '', 'greeting' => '',
+            'listing' => null, 'public' => null, 'category' => '', 'token' => '', 'state' => 'invalid', 'error' => null, 'greeting' => '',
         ]));
     }
 }

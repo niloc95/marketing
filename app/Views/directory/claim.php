@@ -11,7 +11,6 @@
  * @var string                   $token
  * @var string                   $state    ask | claimed | reported | removed | invalid
  * @var string|null              $error
- * @var string                   $source   where the details came from
  * @var string                   $greeting
  */
 $siteName = config('Directory')->siteName();
@@ -70,7 +69,7 @@ $address  = $public !== null ? array_values(array_filter(array_map('trim', [
             <?php else: ?>
                 <h1 class="mb-1.5 text-2xl font-extrabold text-slate-900 dark:text-white">Is this your <?= esc($noun) ?>?</h1>
                 <p class="mb-5 text-sm text-slate-500 dark:text-slate-400">
-                    We created this profile on <?= esc($siteName) ?> from <?= esc($source) ?>. Please check it, then choose below.
+                    This is your <?= esc($noun) ?> profile on <?= esc($siteName) ?>. Please check it, then choose below.
                     Nothing changes until you do.
                 </p>
 

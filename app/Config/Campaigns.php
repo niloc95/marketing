@@ -48,7 +48,7 @@ class Campaigns extends BaseConfig
             'subject'    => 'Is this your {noun}? Your profile on {site}',
             'paragraphs' => [
                 'Hello,',
-                '{name} has a {noun} profile on {site}, a local discovery and visibility platform. We created it from {source}, so {audience} can discover your {noun} and find your phone number, address and hours.',
+                '{name} has a {noun} profile on {site}, a local discovery and visibility platform, so {audience} can discover your {noun} and find your phone number, address and hours.',
                 'In the last 30 days your profile appeared {appearances} times in Google results.',
                 'Claim it to check the details are right and keep them up to date: add photos, your services and your hours. Claiming costs nothing, and no subscription is needed.',
                 'If anything is wrong, or you would rather not be on the platform, reply to this email and we will fix or remove it.',
@@ -84,7 +84,7 @@ class Campaigns extends BaseConfig
                     'button'     => ['Claim my profile', 'claim'],
                     'paragraphs' => [
                         '{greeting}',
-                        '{name} has a {noun} profile on {site}, a local discovery and visibility platform. We created it from {source}, so {audience} can discover your {noun} and find your address, phone number and hours.',
+                        '{name} has a {noun} profile on {site}, a local discovery and visibility platform, so {audience} can discover your {noun} and find your address, phone number and hours.',
                         'Claiming it lets you check those details, keep them current, and add your services and photos. Claiming costs nothing and no subscription is needed.',
                         'Visitors who want to reach you write through a private form on your profile. Your email address is not shown, and each message goes to your {noun}, so your staff can reply or arrange an appointment.',
                         'If anything is wrong, or you would rather not have a profile, the button below also lets you tell us or remove it. You can reply to this email too.',
@@ -177,7 +177,9 @@ class Campaigns extends BaseConfig
 
     /**
      * Where an imported profile's details came from, by signup_source, for
-     * {source}. Read by the owner before the first send.
+     * {source}. No default template says it any more (owner, 27 Nov 2026:
+     * the "we created it from" sentence is out of the claim emails and the
+     * claim page); kept for a campaign an admin words by hand.
      *
      * @var array<string,string>
      */
