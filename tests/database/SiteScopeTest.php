@@ -423,7 +423,7 @@ final class SiteScopeTest extends CIUnitTestCase
         foreach (['za' => $za, 'app' => $app] as $site => $html) {
             $this->assertStringContainsString('<strong class="xl:hidden">Add profile</strong>', $html, $site);
             $this->assertStringContainsString('<strong class="hidden xl:inline">Add your practice or business</strong>', $html, $site);
-            $this->assertStringContainsString('Create your free practice profile.', $html, $site . ' footer');
+            $this->assertStringContainsString('Add your practice or business.', $html, $site . ' footer');
             $this->assertStringNotContainsString('Create your free business profile', $html, $site);
         }
         $this->assertStringContainsString('A discovery platform for South African practices, businesses', $za);

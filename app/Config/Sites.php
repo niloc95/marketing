@@ -72,7 +72,7 @@ class Sites extends BaseConfig
      */
     public array $appCopy = [
         'title'           => 'Discover local practices and businesses near you',
-        'footer'          => 'Discover local. Be discovered. A discovery platform for local practices, businesses, services, locations, professionals and opportunities. Create your free practice profile.',
+        'footer'          => 'Discover local. Be discovered. A discovery platform for local practices, businesses, services, locations, professionals and opportunities. Add your practice or business.',
         'siteDescription' => 'A local discovery and visibility platform for practices and businesses in the United Kingdom, the United States, Australia, New Zealand, Namibia, Botswana, Kenya and Nigeria. '
             . 'Discover practices, businesses, services, locations, professionals and opportunities near you, '
             . 'or create a free practice profile: no monthly fee, no subscription, no obligation.',

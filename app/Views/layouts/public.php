@@ -358,7 +358,7 @@ foreach (config('Countries')->profiles as $code => $profile) {
                     <img class="brand-mark" src="<?= $brandUrl('assets/brand/logo-64.png') ?>" alt="" width="32" height="32" />
                     <span>WebScheduler <span class="text-brand-orange">Local</span></span>
                 </a>
-                <p class="site-footer-tagline"><?= esc(site_copy('footer', 'Discover local. Be discovered. A discovery platform for South African practices, businesses, services, locations, professionals and opportunities. Create your free practice profile.')) ?></p>
+                <p class="site-footer-tagline"><?= esc(site_copy('footer', 'Discover local. Be discovered. A discovery platform for South African practices, businesses, services, locations, professionals and opportunities. Add your practice or business.')) ?></p>
                 <?= view('directory/_our_socials', ['class' => 'mt-4']) ?>
                 <?php // Newsletter: our own list (Newsletter controller), one for
                       // both sites and the brand site. It lands on
