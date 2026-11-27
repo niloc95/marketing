@@ -46,7 +46,7 @@ $benefits = [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free practice profile. Add Plus when you want
+                Start with your profile at no cost. Add Plus when you want
                 <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your other locations,
                 your team and your vacancies.
             </p>
@@ -56,7 +56,7 @@ $benefits = [
         <div class="pricing-grid"<?= $onSignup ? '' : ' data-scroll-reveal' ?>>
             <div class="plan-card pricing-card">
                 <p class="plan-name">Free Profile</p>
-                <p class="plan-price"><?= esc(money('0', 'USD')) ?><span class="plan-price-unit">free, always</span></p>
+                <p class="plan-price"><?= esc(money('0', 'USD')) ?><span class="plan-price-unit">no charge, ever</span></p>
                 <p class="plan-blurb">
                     Everything you need to be found online and contacted. No monthly fee, no subscription
                     and no obligation.
@@ -67,7 +67,7 @@ $benefits = [
                     <?php endforeach; ?>
                 </ul>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= $onSignup ? '#listing-form' : base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start free' : 'Add your practice or business' ?></a>
+                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start with a profile' : 'Add your practice or business' ?></a>
             </div>
 
             <div class="plan-card plan-card-featured pricing-card">
@@ -76,7 +76,7 @@ $benefits = [
                 <?php if (($plusYearly = plus_yearly_usd()) !== null): ?>
                     <p class="pricing-yearly">or <?= esc(money($plusYearly, 'USD')) ?> a year, paid yearly</p>
                 <?php endif; ?>
-                <p class="plan-blurb">Everything in the free profile, plus:</p>
+                <p class="plan-blurb">Everything in your profile, plus:</p>
                 <ul class="pricing-benefits">
                     <?php foreach ($benefits as $b): ?>
                         <li class="pricing-benefit">
@@ -91,10 +91,10 @@ $benefits = [
                 <p class="hint plan-terms">
                     Add Plus from your dashboard once your profile is live. Billed <?= plus_yearly_usd() !== null ? 'monthly or yearly' : 'monthly' ?> in South African
                     rand: WebScheduler is a South African company and your bank converts the charge.
-                    Cancel any time; your profile stays free.
+                    Cancel any time; your profile stays live at no cost.
                 </p>
                 <a class="btn btn-accent btn-block plan-cta" href="<?= $onSignup ? '#listing-form' : base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="plus">Start free, add Plus</a>
+                   data-track="pricing_cta" data-track-label="plus">Start now, add Plus later</a>
             </div>
         </div>
 <?php if (! $onSignup): ?>
@@ -105,7 +105,7 @@ $benefits = [
         <a class="pricing-existing" href="<?= base_url('business/badge') ?>" data-track="pricing_cta" data-track-label="upgrade_existing">
             <span class="pricing-existing-icon" aria-hidden="true"><?= lucide('circle-user', 'h-5 w-5') ?></span>
             <span class="pricing-existing-text">
-                <strong>Already have a free profile?</strong>
+                <strong>Already have a profile?</strong>
                 Add Plus from your dashboard. We email you a sign in link.
             </span>
             <?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?>

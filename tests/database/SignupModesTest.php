@@ -59,11 +59,11 @@ final class SignupModesTest extends CIUnitTestCase
 
         $this->assertStringContainsString('data-plan-cards', $html, 'the plan picker is on');
         $this->assertStringContainsString('data-plan-card="free"', $html, 'Free is one click away');
-        $this->assertStringContainsString('keep my profile free', $html);
+        $this->assertStringContainsString('keep my profile as it is', $html);
         $this->assertLessThan(strpos($html, 'data-plan-card="free"'), strpos($html, 'data-plan-card="verified"'), 'Verified comes first');
         $this->assertStringContainsString('name="plan" value="verified"', $html);
         $this->assertStringContainsString('name="form_mode" value="verified-page"', $html);
-        $this->assertStringContainsString('A South African practice profile is free either way', $html);
+        $this->assertStringContainsString('costs nothing either way, and never will', $html);
     }
 
     /**

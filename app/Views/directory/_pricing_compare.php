@@ -105,7 +105,7 @@ $benefits = array_merge($benefits, [
         <div class="home-pricing-head" data-scroll-reveal>
             <h2 class="home-statement" id="pricing-title">Get found. Get connected. Get noticed.</h2>
             <p class="home-pricing-lede">
-                Start with a free practice profile. Upgrade to Verified when you want
+                Start with your profile at no cost. Upgrade to Verified when you want
                 <?= bookings_in_premium() ? 'online bookings, ' : '' ?>to show your people, your other
                 locations and your vacancies.
             </p>
@@ -114,7 +114,7 @@ $benefits = array_merge($benefits, [
         <div class="pricing-grid" data-scroll-reveal>
             <div class="plan-card pricing-card">
                 <p class="plan-name">Free Profile</p>
-                <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
+                <p class="plan-price">R0<span class="plan-price-unit">no charge, ever</span></p>
                 <p class="plan-blurb">
                     Everything you need to be found online and contacted. No monthly fee, no subscription
                     and no obligation.
@@ -124,7 +124,7 @@ $benefits = array_merge($benefits, [
                         <li class="plan-row-yes"><span><?= esc($line) ?></span></li>
                     <?php endforeach; ?>
                 </ul>
-                <p class="hint plan-terms">Free for any practice or business with a South African address.</p>
+                <p class="hint plan-terms">No charge for any practice or business with a South African address.</p>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= base_url('add-profile?plan=free') ?>"
                    data-track="pricing_cta" data-track-label="free">Add your practice or business</a>
             </div>
@@ -140,7 +140,7 @@ $benefits = array_merge($benefits, [
                     </div>
                     <?= verified_seal('verified-seal pricing-seal') ?>
                 </div>
-                <p class="plan-blurb">Everything in the free profile, plus:</p>
+                <p class="plan-blurb">Everything in your profile, plus:</p>
                 <ul class="pricing-benefits">
                     <?php foreach ($benefits as $b): ?>
                         <li class="pricing-benefit">
@@ -175,7 +175,7 @@ $benefits = array_merge($benefits, [
         <a class="pricing-existing" href="<?= base_url('business/badge') ?>" data-track="pricing_cta" data-track-label="upgrade_existing">
             <span class="pricing-existing-icon" aria-hidden="true"><?= lucide('circle-user', 'h-5 w-5') ?></span>
             <span class="pricing-existing-text">
-                <strong>Already have a free profile?</strong>
+                <strong>Already have a profile?</strong>
                 Upgrade from your dashboard. We email you a sign in link.
             </span>
             <?= lucide('arrow-right', 'h-4 w-4 shrink-0') ?>

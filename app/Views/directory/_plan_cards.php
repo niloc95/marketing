@@ -124,7 +124,7 @@ $row = static function (array $r, string $col): string {
             <p class="pricing-yearly">or <?= esc(money($badgeYearly)) ?> a year, paid yearly</p>
         <?php endif; ?>
         <p class="plan-blurb">
-            Everything in the free profile, plus documents checked,<?= bookings_in_premium() ? ' online bookings,' : '' ?>
+            Everything in your profile, plus documents checked,<?= bookings_in_premium() ? ' online bookings,' : '' ?>
             your other locations, your people and your job vacancies.
         </p>
         <ul class="plan-rows">
@@ -135,8 +135,8 @@ $row = static function (array $r, string $col): string {
         <?php // Same terms as _verification_pitch.php, and they must stay the same. ?>
         <p class="hint plan-terms">
             <strong>Nothing to pay now.</strong> We review your documents first and only ask
-            for payment if they check out. Cancel any time. A South African practice profile
-            is free either way, and stays free.
+            for payment if they check out. Cancel any time. A profile for a South African practice
+            or business costs nothing either way, and never will.
         </p>
         <a class="btn btn-accent btn-block plan-cta" data-plan-pick="verified"
            href="<?= base_url('add-profile') ?>">Get Verified</a>
@@ -144,7 +144,7 @@ $row = static function (array $r, string $col): string {
 
     <div class="plan-card<?= $selected === 'free' ? ' plan-card-picked' : '' ?>" data-plan-card="free">
         <p class="plan-name">Free Profile</p>
-        <p class="plan-price">R0<span class="plan-price-unit">free, always</span></p>
+        <p class="plan-price">R0<span class="plan-price-unit">no charge, ever</span></p>
         <p class="plan-blurb">
             No monthly fee. No subscription. No obligation. A full profile that customers
             can find and contact, with nothing held back later.
@@ -157,7 +157,7 @@ $row = static function (array $r, string $col): string {
               // axis entirely, which is why this sits on the Free card and not in
               // the ✓/✗ matrix below. ?>
         <p class="hint plan-terms">
-            Free for any practice or business with a <strong>South African address</strong>, with
+            No charge for any practice or business with a <strong>South African address</strong>, with
             <a href="<?= base_url('verified') ?>">Verified</a> as an optional upgrade. A practice or
             business based outside South Africa needs an
             <a href="<?= base_url('faq') ?>">International Profile</a> instead.
@@ -171,7 +171,7 @@ $row = static function (array $r, string $col): string {
               // shareable. data-plan-pick is what the picker module intercepts to
               // do the swap in place instead — see "plan picker" in directory.js. ?>
         <a class="btn btn-ghost btn-block plan-cta" data-plan-pick="free"
-           href="<?= base_url('add-profile?plan=free') ?>">Start free</a>
+           href="<?= base_url('add-profile?plan=free') ?>">Start with a profile</a>
     </div>
 
 </div>
