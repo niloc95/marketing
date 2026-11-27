@@ -186,6 +186,9 @@ final class CampaignSequenceTest extends CIUnitTestCase
                 $this->assertDoesNotMatchRegularExpression('/\b(listing|directory|badge)\b/i', $text, $key);
                 $this->assertDoesNotMatchRegularExpression('/[\x{2014}\x{2013}]|\b\p{L}+-\p{L}+\b/u', $text, $key);
                 $this->assertSame([], CampaignRenderer::unknownFields($text), $key);
+                if (isset($kind['steps'])) {
+                    $this->assertStringNotContainsString('{name}', $text, $key . ': sequences speak to "you"; the greeting already names a person');
+                }
             }
             $this->assertTrue($svc->save(null, $svc->defaults($key))['ok'], $key);
         }

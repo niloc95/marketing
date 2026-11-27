@@ -78,7 +78,9 @@ class Campaigns extends BaseConfig
         // step timed from that profile's previous email (the Verified
         // sequence's first step from its claim). Copy rules: never "free"
         // (costs nothing, no subscription), {plan} for Verified or Plus,
-        // nothing about Google, rankings, patient numbers or prices.
+        // nothing about Google, rankings, patient numbers or prices. Written
+        // to "you": never {name}, which the greeting already says for a person
+        // ("Dear Dr A Smith, Dr A Smith has..." reads wrong).
         'claim_sequence' => [
             'label'    => 'Claim sequence (three emails)',
             'summary'  => 'Asks the owner of an imported profile to claim it: an introduction, the private contact form, and a last reminder. Each email links to the claim page, where the owner confirms, reports a mistake or removes the profile. Stops for anyone who claims.',
@@ -92,7 +94,7 @@ class Campaigns extends BaseConfig
                     'button'     => ['Claim my profile', 'claim'],
                     'paragraphs' => [
                         '{greeting}',
-                        '{name} has a {noun} profile on {site}, a local discovery and visibility platform, so {audience} can discover your {noun} and find your address, phone number and hours.',
+                        'Your {noun} has a profile on {site}, a local discovery and visibility platform, so {audience} can discover you and find your address, phone number and hours.',
                         'Claiming it lets you check those details, keep them current, and add your services and photos. Claiming costs nothing and no subscription is needed.',
                         'Visitors who want to reach you write through a private form on your profile. Your email address is not shown, and each message goes to your {noun}, so your staff can reply or arrange an appointment.',
                         'If anything is wrong, or you would rather not have a profile, the button below also lets you tell us or remove it. You can reply to this email too.',
@@ -108,7 +110,7 @@ class Campaigns extends BaseConfig
                         'When people discover a {noun} online, they often want a simple way to ask a question first.',
                         'Your profile on {site} has a private contact form. Your email address is never shown, and each message is delivered to your {noun}, where your reception or staff can take over, answer, or arrange an appointment.',
                         'We think technology should make it easier to reach a {noun}, without taking away the personal service of your team.',
-                        'The profile for {name} is still waiting to be claimed. Claiming costs nothing.',
+                        'Your profile is still waiting to be claimed. Claiming costs nothing.',
                     ],
                 ],
                 [
@@ -118,7 +120,7 @@ class Campaigns extends BaseConfig
                     'button'     => ['Check my profile', 'claim'],
                     'paragraphs' => [
                         '{greeting}',
-                        'The profile for {name} on {site} is still waiting to be claimed.',
+                        'Your profile on {site} is still waiting to be claimed.',
                         'People looking for a {noun} may use it to find your address, phone number and hours, so please take a moment to check that everything is right.',
                         'Claiming lets you correct anything, add your services and photos, and keep the details current. It costs nothing.',
                         'This is our last email about claiming. If you would rather not have a profile, the button below lets you remove it, or you can reply to this email.',
@@ -133,7 +135,7 @@ class Campaigns extends BaseConfig
             'sequence' => 'verified',
             'steps'    => [
                 [
-                    'subject'    => 'Thank you for claiming {name}',
+                    'subject'    => 'Thank you for claiming your profile',
                     'extras'     => [['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 2,
                     'button'     => ['See what {plan} adds', 'upgrade'],
@@ -148,7 +150,7 @@ class Campaigns extends BaseConfig
                     ],
                 ],
                 [
-                    'subject'    => 'What happens after {audience} discover {name}',
+                    'subject'    => 'What happens after {audience} discover you',
                     'extras'     => [['Try booking at our demo practice', 'demo_booking'], ['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 5,
                     'button'     => ['See booking features', 'upgrade'],
@@ -161,7 +163,7 @@ class Campaigns extends BaseConfig
                     ],
                 ],
                 [
-                    'subject'    => '{name} on {site}',
+                    'subject'    => 'Your profile on {site}',
                     'extras'     => [['An example practice profile', 'demo_profile'], ['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 7,
                     'button'     => ['See {plan}', 'upgrade'],
