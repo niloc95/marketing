@@ -971,16 +971,9 @@
   /* The search is the page's main object, so its composer is the biggest one
      on the site (the shared rules are under "search composer"). */
   .home-search { @apply mt-10 sm:mt-12; }
-  /* Example searches under the box: plain links, quiet until hovered. */
-  .home-examples { @apply m-0 mt-4 flex list-none flex-wrap gap-2 p-0; }
-  .home-examples a {
-    @apply inline-flex h-8 items-center rounded-control border border-slate-200 px-3.5 text-sm text-slate-600
-           no-underline hover:border-primary-300 hover:text-primary-600;
-  }
-  .dark .home-examples a { @apply border-slate-700 text-slate-300 hover:border-primary-400 hover:text-primary-300; }
   /* Medical first (owner, 17 Nov 2026): "Find a doctor, dentist or vet",
      the patient's way in, right under the box. Tinted, so it reads as the
-     main entry points rather than as more examples. */
+     main entry points. */
   .home-care { @apply mt-5 flex flex-wrap items-center gap-x-3 gap-y-2; }
   .home-care-label { @apply m-0 text-sm font-semibold text-slate-900; }
   .home-care ul { @apply m-0 flex list-none flex-wrap gap-2 p-0; }
