@@ -21,7 +21,7 @@ class CampaignModel extends Model
     protected $returnType    = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'kind', 'name', 'subject', 'body', 'audience', 'daily_limit', 'status', 'paused_reason',
+        'kind', 'sequence', 'name', 'subject', 'body', 'audience', 'daily_limit', 'status', 'paused_reason',
         'test_sent_at', 'started_at', 'finished_at',
     ];
 }

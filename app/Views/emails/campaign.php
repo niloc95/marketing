@@ -10,6 +10,8 @@
  * @var array{0:string,1:string}  $button      [label, url]
  * @var string                    $unsubscribe
  * @var bool                      $signIn      the button is a one use sign in link
+ * @var bool                      $claim       the button opens the claim page
+ * @var int                       $claimDays   how long a claim link works
  */
 ?>
 <?= $this->extend('emails/_layout') ?>
@@ -24,6 +26,8 @@
         <p style="font-size:13px;color:#64748b">Or paste this link into your browser:<br><a href="<?= esc($button[1]) ?>" style="color:#003049;word-break:break-all"><?= esc($button[1]) ?></a></p>
         <?php if ($signIn): ?>
             <p style="font-size:13px;color:#64748b">That button signs you straight in, no password. It works once, and expires in 7 days.</p>
+        <?php elseif (! empty($claim)): ?>
+            <p style="font-size:13px;color:#64748b">That button opens your profile so you can confirm it is yours, tell us what is wrong, or remove it. Nothing changes until you choose. The link works for <?= (int) ($claimDays ?? 14) ?> days.</p>
         <?php endif; ?>
         <p style="font-size:13px;color:#64748b">
             You're getting this because <?= esc($name) ?> has a <?= esc($noun) ?> profile on <?= esc($site) ?>.

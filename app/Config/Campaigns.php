@@ -21,6 +21,9 @@ use CodeIgniter\Config\BaseConfig;
  *
  * Button targets:
  * - signin: a live sign in link to /business (minted at send time, 7 days)
+ * - claim: the claim page /claim/{token} (ClaimService): look, then confirm,
+ *   report or remove. A GET changes nothing, so a mail scanner opening the
+ *   link cannot claim the profile. One link per email, Campaigns::$claimLinkDays.
  * - upgrade: /verified on co.za, /plus on .app, on the profile's own site
  * - business: /business on the profile's own site
  * - profile: the public profile page
@@ -42,15 +45,15 @@ class Campaigns extends BaseConfig
             'label'      => 'Claim your practice profile',
             'summary'    => 'Tells the owner of an imported profile that it exists, where the details came from, and how to claim it.',
             'segments'   => ['unclaimed_imports'],
-            'subject'    => 'Is this your {noun}? Your free profile on {site}',
+            'subject'    => 'Is this your {noun}? Your profile on {site}',
             'paragraphs' => [
                 'Hello,',
-                '{name} has a free {noun} profile on {site}, a local discovery and visibility platform. We created it from {source}, so {audience} can discover your {noun} and find your phone number, address and hours.',
+                '{name} has a {noun} profile on {site}, a local discovery and visibility platform. We created it from {source}, so {audience} can discover your {noun} and find your phone number, address and hours.',
                 'In the last 30 days your profile appeared {appearances} times in Google results.',
-                'Claim it to check the details are right and keep them up to date: add photos, your services and your hours. Claiming costs nothing, and the profile stays free.',
+                'Claim it to check the details are right and keep them up to date: add photos, your services and your hours. Claiming costs nothing, and no subscription is needed.',
                 'If anything is wrong, or you would rather not be on the platform, reply to this email and we will fix or remove it.',
             ],
-            'button'     => ['Claim my free profile', 'signin'],
+            'button'     => ['Claim my profile', 'claim'],
         ],
         'verified_upgrade' => [
             'label'      => 'Upgrade to Verified or Plus',
@@ -60,9 +63,104 @@ class Campaigns extends BaseConfig
             'paragraphs' => [
                 'Hello,',
                 'Thank you for keeping {name} up to date on {site}.',
-                'Your profile stays free. If you would like more, the paid plan adds your team, extra branches and vacancies on the Jobs board.',
+                'Your profile stays as it is. If you would like more, the paid plan adds your team, extra branches and vacancies on the Jobs board.',
             ],
             'button'     => ['See what it adds', 'upgrade'],
+        ],
+        // Sequences (owner, 27 Nov 2026): several emails per profile, each
+        // step timed from that profile's previous email (the Verified
+        // sequence's first step from its claim). Copy rules: never "free"
+        // (costs nothing, no subscription), {plan} for Verified or Plus,
+        // nothing about Google, rankings, patient numbers or prices.
+        'claim_sequence' => [
+            'label'    => 'Claim sequence (three emails)',
+            'summary'  => 'Asks the owner of an imported profile to claim it: an introduction, the private contact form, and a last reminder. Each email links to the claim page, where the owner confirms, reports a mistake or removes the profile. Stops for anyone who claims.',
+            'segments' => ['unclaimed_imports'],
+            'sequence' => 'claim',
+            'steps'    => [
+                [
+                    'subject'    => 'Your {noun} profile on {site}',
+                    'delay_days' => 0,
+                    'button'     => ['Claim my profile', 'claim'],
+                    'paragraphs' => [
+                        '{greeting}',
+                        '{name} has a {noun} profile on {site}, a local discovery and visibility platform. We created it from {source}, so {audience} can discover your {noun} and find your address, phone number and hours.',
+                        'Claiming it lets you check those details, keep them current, and add your services and photos. Claiming costs nothing and no subscription is needed.',
+                        'Visitors who want to reach you write through a private form on your profile. Your email address is not shown, and each message goes to your {noun}, so your staff can reply or arrange an appointment.',
+                        'If anything is wrong, or you would rather not have a profile, the button below also lets you tell us or remove it. You can reply to this email too.',
+                    ],
+                ],
+                [
+                    'subject'    => 'A private way for {audience} to contact your {noun}',
+                    'delay_days' => 4,
+                    'button'     => ['Claim my profile', 'claim'],
+                    'paragraphs' => [
+                        '{greeting}',
+                        'When people discover a {noun} online, they often want a simple way to ask a question first.',
+                        'Your profile on {site} has a private contact form. Your email address is never shown, and each message is delivered to your {noun}, where your reception or staff can take over, answer, or arrange an appointment.',
+                        'We think technology should make it easier to reach a {noun}, without taking away the personal service of your team.',
+                        'The profile for {name} is still waiting to be claimed. Claiming costs nothing.',
+                    ],
+                ],
+                [
+                    'subject'    => 'Is your profile on {site} up to date?',
+                    'delay_days' => 6,
+                    'button'     => ['Check my profile', 'claim'],
+                    'paragraphs' => [
+                        '{greeting}',
+                        'The profile for {name} on {site} is still waiting to be claimed.',
+                        'People looking for a {noun} may use it to find your address, phone number and hours, so please take a moment to check that everything is right.',
+                        'Claiming lets you correct anything, add your services and photos, and keep the details current. It costs nothing.',
+                        'This is our last email about claiming. If you would rather not have a profile, the button below lets you remove it, or you can reply to this email.',
+                    ],
+                ],
+            ],
+        ],
+        'verified_sequence' => [
+            'label'    => 'Verified sequence after a claim (three emails)',
+            'summary'  => 'Runs on its own once started: every imported profile claimed after the start joins, and gets three emails about Verified (Plus on .app), the first two days after the claim. Stops for anyone who upgrades.',
+            'segments' => ['free'],
+            'sequence' => 'verified',
+            'steps'    => [
+                [
+                    'subject'    => 'Thank you for claiming {name}',
+                    'delay_days' => 2,
+                    'button'     => ['See what {plan} adds', 'upgrade'],
+                    'paragraphs' => [
+                        '{greeting}',
+                        'Thank you for claiming your {noun} profile on {site}. Your profile stays as it is, with no subscription needed, and you can keep it current whenever you like.',
+                        'If you would like to take it further, {plan} adds tools for your {noun}.',
+                        'Online bookings, so {audience} can book through your profile while your team manages the diary.',
+                        'Your team, each person with their own card and qualifications, and your other branches, each with its own address and hours.',
+                        'Vacancies on the Jobs board, and fuller statistics on how your profile is discovered and what visitors do next.',
+                        'Nothing changes if you do nothing. {plan} is there when you want more.',
+                    ],
+                ],
+                [
+                    'subject'    => 'What happens after {audience} discover {name}',
+                    'delay_days' => 5,
+                    'button'     => ['See booking features', 'upgrade'],
+                    'paragraphs' => [
+                        '{greeting}',
+                        'One of the most important parts of a visit to your profile is what happens next.',
+                        '{site} connects {audience} with your {noun}; it does not replace your reception. A message through your profile goes to your {noun}, and your staff reply, help, or arrange an appointment.',
+                        'With {plan}, {audience} can also book online through your profile. You set the services and the times, and your team stays in charge of every booking.',
+                        'Your profile stays as it is whether or not you choose {plan}.',
+                    ],
+                ],
+                [
+                    'subject'    => '{name} on {site}',
+                    'delay_days' => 7,
+                    'button'     => ['See {plan}', 'upgrade'],
+                    'paragraphs' => [
+                        '{greeting}',
+                        'Your profile on {site} is yours to manage.',
+                        'It gives {audience} one place to find your {noun} and contact you. {plan} adds online bookings, your team and your branches when you are ready for them.',
+                        'You do not need {plan} to keep your profile. This is our last email about it; after this we will only write when there is something useful to tell you.',
+                        'Thank you for being part of {site}.',
+                    ],
+                ],
+            ],
         ],
         'announcement' => [
             'label'      => 'Announcement',
@@ -98,4 +196,13 @@ class Campaigns extends BaseConfig
 
     /** Tries per recipient before it is left as failed. */
     public int $maxAttempts = 3;
+
+    /** Days between two campaign emails to one address, whatever the campaigns. */
+    public int $recentContactDays = 3;
+
+    /** Days a claim page link works (each claim email has its own). */
+    public int $claimLinkDays = 14;
+
+    /** Longest delay the form accepts for a sequence step. */
+    public int $maxDelayDays = 60;
 }

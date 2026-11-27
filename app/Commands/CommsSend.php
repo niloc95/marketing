@@ -41,10 +41,10 @@ class CommsSend extends BaseCommand
 
         $summary = $dryRun
             ? sprintf('%d would be sent (dry run: nothing sent).', $t['would'])
-            : sprintf('%d sent, %d failed, %d skipped, %d campaigns paused, %d finished.', $t['sent'], $t['failed'], $t['skipped'], $t['paused'], $t['done']);
+            : sprintf('%d sent, %d failed, %d skipped, %d held, %d joined a sequence, %d campaigns paused, %d finished.', $t['sent'], $t['failed'], $t['skipped'], $t['held'], $t['joined'], $t['paused'], $t['done']);
 
         $quiet || CLI::write($summary, $t['failed'] > 0 || $t['paused'] > 0 ? 'yellow' : 'green');
-        if (! $dryRun && ($t['sent'] + $t['failed'] + $t['skipped'] + $t['paused'] + $t['done']) > 0) {
+        if (! $dryRun && ($t['sent'] + $t['failed'] + $t['skipped'] + $t['joined'] + $t['paused'] + $t['done']) > 0) {
             log_message('info', '[comms-send] ' . $summary);
         }
 

@@ -45,7 +45,7 @@ class DirectoryListingModel extends Model
         'quality_nudge_sent_at',
         'terms_accepted_at', 'terms_version',
         'marketing_opt_in', 'marketing_consent_at', 'marketing_withdrawn_at', 'marketing_consent_source', 'marketing_token',
-        'comms_opt_out_at', 'comms_opt_out_source',
+        'comms_opt_out_at', 'comms_opt_out_source', 'claimed_at', 'comms_paused_at', 'comms_paused_note',
         // Lead alerts. Service-written only (JobBoardService), never OWNER_EDITABLE.
         'job_alerts', 'job_alerts_token',
         // Owner's reviews switch. Service-written only (ReviewService::setEnabled), never OWNER_EDITABLE.

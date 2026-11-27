@@ -16,7 +16,8 @@
  * @var int                      $listingId
  */
 $id    = (int) $campaign['id'];
-$query = $listingId > 0 ? '?listing=' . $listingId : '';
+$step  = (int) ($email['step'] ?? 1);
+$query = '?' . http_build_query(array_filter(['listing' => $listingId > 0 ? $listingId : null, 'step' => $step > 1 ? $step : null]));
 ?>
 <div class="shell-page">
     <nav class="crumbs" aria-label="Breadcrumb">
@@ -24,7 +25,7 @@ $query = $listingId > 0 ? '?listing=' . $listingId : '';
         <span class="crumbs-sep">/</span>
         <a href="<?= base_url('admin/communications/' . $id) ?>"><?= esc($campaign['name']) ?></a>
         <span class="crumbs-sep">/</span>
-        <span>Preview</span>
+        <span>Preview<?= ($email['steps'] ?? 1) > 1 ? ', email ' . $step . ' of ' . (int) $email['steps'] : '' ?></span>
     </nav>
 
     <form method="get" action="<?= base_url('admin/communications/' . $id . '/preview') ?>" class="mb-5 flex flex-wrap items-end gap-2">
@@ -32,6 +33,16 @@ $query = $listingId > 0 ? '?listing=' . $listingId : '';
             <label for="p-listing">Render for profile id</label>
             <input type="number" id="p-listing" name="listing" min="1" value="<?= $listingId > 0 ? $listingId : '' ?>" placeholder="First in audience">
         </div>
+        <?php if (($email['steps'] ?? 1) > 1): ?>
+            <div class="field mb-0">
+                <label for="p-step">Email</label>
+                <select id="p-step" name="step">
+                    <?php for ($n = 1; $n <= (int) $email['steps']; $n++): ?>
+                        <option value="<?= $n ?>" <?= $n === $step ? 'selected' : '' ?>><?= $n ?></option>
+                    <?php endfor; ?>
+                </select>
+            </div>
+        <?php endif; ?>
         <button type="submit" class="btn btn-ghost">Show</button>
     </form>
 
@@ -44,7 +55,7 @@ $query = $listingId > 0 ? '?listing=' . $listingId : '';
             <p class="mb-1 text-sm text-slate-500 dark:text-slate-400">Subject</p>
             <p class="mb-5 font-semibold text-slate-900 dark:text-white"><?= esc($email['subject']) ?></p>
             <a class="btn btn-primary" href="<?= base_url('admin/communications/' . $id . '/raw' . $query) ?>" target="_blank" rel="noopener" data-no-spa>Open the email as sent</a>
-            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">The preview button links to the sign in page; the real email carries a one use sign in link minted at send time.</p>
+            <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">The preview button links to the sign in page (a claim button to the public profile); the real email carries a link minted at send time.</p>
             <div class="mt-5">
                 <?= $this->include('admin/communications/_footer_preview') ?>
             </div>

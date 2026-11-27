@@ -2,6 +2,7 @@
 
 namespace App\Services\Communications;
 
+use App\Libraries\TokenHash;
 use App\Services\DirectoryListingMutationService;
 use App\Services\GoogleDataService;
 use App\Services\MarketingConsentService;
@@ -24,16 +25,19 @@ use Config\Sites;
 class CampaignRenderer
 {
     /** The merge fields a subject or paragraph may use. */
-    public const FIELDS = ['{name}', '{noun}', '{audience}', '{appearances}', '{site}', '{source}'];
+    public const FIELDS = ['{greeting}', '{name}', '{noun}', '{audience}', '{appearances}', '{site}', '{source}', '{plan}'];
 
     /** Days of Google results {appearances} counts. */
     public const APPEARANCE_DAYS = 30;
 
     /**
-     * @param array<string,mixed> $campaign a campaigns row (kind, subject, body)
+     * A sequence step is rendered by passing the campaign with that step's
+     * subject and body, and its `button` ([label, target]) from the template.
+     *
+     * @param array<string,mixed> $campaign a campaigns row (kind, subject, body, optional button)
      * @param array<string,mixed> $listing  a fresh listings row
-     * @param bool                $live     a real send: mint the sign in link
-     * @return array{subject:string,html:string,unsubscribe:string}
+     * @param bool                $live     a real send: mint the sign in or claim link
+     * @return array{subject:string,html:string,unsubscribe:string,linkHash:?string,linkExpires:?string}
      */
     public function render(array $campaign, array $listing, bool $live): array
     {
@@ -57,25 +61,38 @@ class CampaignRenderer
             $paragraphs[] = strtr($p, $values);
         }
 
-        [$label, $target] = $kind['button'];
+        [$label, $target] = $campaign['button'] ?? $kind['button'] ?? ['Open my profile', 'business'];
         $unsubscribe      = (new MarketingConsentService())->unsubscribeUrl($id);
         $site             = config('Directory')->siteName();
+        $link             = $this->link($target, $listing, $live);
 
         $html = view('emails/campaign', [
             'site'        => $site,
             'name'        => (string) ($listing['display_name'] ?? ''),
             'noun'        => listing_noun($listing),
             'paragraphs'  => $paragraphs,
-            'button'      => [strtr($label, $values), $this->buttonUrl($target, $listing, $live)],
+            'button'      => [strtr($label, $values), $link['url']],
             'unsubscribe' => $unsubscribe,
             'signIn'      => $target === 'signin',
+            'claim'       => $target === 'claim',
+            'claimDays'   => $config->claimLinkDays,
         ], ['saveData' => false]);
 
         return [
             'subject'     => self::oneLine(strtr((string) $campaign['subject'], $values)),
             'html'        => $html,
             'unsubscribe' => $unsubscribe,
+            'linkHash'    => $link['hash'],
+            'linkExpires' => $link['expires'],
         ];
+    }
+
+    /** "Dear Dr A Smith," for a profile that is one person, else "Hello,". The name is never shortened. */
+    public static function greeting(array $listing): string
+    {
+        $name = trim((string) ($listing['display_name'] ?? ''));
+
+        return schema_is_person_profile($listing) && $name !== '' ? 'Dear ' . $name . ',' : 'Hello,';
     }
 
     /**
@@ -113,12 +130,14 @@ class CampaignRenderer
         $source = (string) ($listing['signup_source'] ?? '');
 
         return [
+            '{greeting}'    => self::greeting($listing),
             '{name}'        => trim((string) ($listing['display_name'] ?? '')),
             '{noun}'        => listing_noun($listing),
             '{audience}'    => listing_audience($listing),
             '{appearances}' => number_format($appearances, 0, '.', ' '),
             '{site}'        => config('Directory')->siteName(),
             '{source}'      => $config->sources[$source] ?? $config->defaultSource,
+            '{plan}'        => service('site')->forRow($listing) === Sites::APP ? 'Plus' : 'Verified',
         ];
     }
 
@@ -132,6 +151,31 @@ class CampaignRenderer
         } catch (\Throwable) {
             return 0;
         }
+    }
+
+    /**
+     * The button's link. A live claim link is a fresh token whose hash the
+     * caller stores on the message row (CommunicationsService); a preview or
+     * test links to the public profile, so it never makes a working link.
+     *
+     * @return array{url:string,hash:?string,expires:?string}
+     */
+    private function link(string $target, array $listing, bool $live): array
+    {
+        if ($target === 'claim') {
+            if (! $live) {
+                return ['url' => listing_site_url($listing, 'directory/' . $listing['slug']), 'hash' => null, 'expires' => null];
+            }
+            $token = TokenHash::mint();
+
+            return [
+                'url'     => listing_site_url($listing, 'claim/' . $token),
+                'hash'    => TokenHash::hash($token),
+                'expires' => date('Y-m-d H:i:s', time() + config('Campaigns')->claimLinkDays * DAY),
+            ];
+        }
+
+        return ['url' => $this->buttonUrl($target, $listing, $live), 'hash' => null, 'expires' => null];
     }
 
     private function buttonUrl(string $target, array $listing, bool $live): string

@@ -29,6 +29,7 @@ class AdminCommunications extends BaseController
         return view('admin/communications/index', [
             'campaigns' => $this->svc->all(),
             'config'    => config('Campaigns'),
+            'paused'    => $this->svc->pausedProfiles(),
         ]);
     }
 
@@ -61,10 +62,12 @@ class AdminCommunications extends BaseController
     {
         $campaign = $this->campaign($id);
         $audience = CommunicationsService::audienceOf($campaign);
-        $values   = session('old') ?? ($campaign + $audience);
+        $steps    = $this->svc->stepsOf($campaign);
+        $values   = session('old') ?? ($campaign + $audience + ['steps' => $steps]);
         $draft    = $campaign['status'] === CampaignModel::STATUS_DRAFT;
 
         return $this->form($campaign, $values, [
+            'steps' => $steps,
             'stats' => $this->svc->stats($id),
             'log'   => $this->svc->log($id),
             'count' => $draft ? $this->svc->audience()->count($audience) : null,
@@ -89,7 +92,7 @@ class AdminCommunications extends BaseController
     {
         $campaign  = $this->campaign($id);
         $listingId = (int) $this->request->getGet('listing');
-        $email     = $this->svc->preview($campaign, $listingId > 0 ? $listingId : null);
+        $email     = $this->svc->preview($campaign, $listingId > 0 ? $listingId : null, max(1, (int) $this->request->getGet('step')));
 
         return view('admin/communications/preview', [
             'campaign'  => $campaign,
@@ -107,7 +110,7 @@ class AdminCommunications extends BaseController
     {
         $campaign  = $this->campaign($id);
         $listingId = (int) $this->request->getGet('listing');
-        $email     = $this->svc->preview($campaign, $listingId > 0 ? $listingId : null);
+        $email     = $this->svc->preview($campaign, $listingId > 0 ? $listingId : null, max(1, (int) $this->request->getGet('step')));
         if ($email === null) {
             throw PageNotFoundException::forPageNotFound();
         }
@@ -149,7 +152,30 @@ class AdminCommunications extends BaseController
             ->with($ok ? 'success' : 'error', $ok ? 'Done.' : 'That cannot be done in this state.');
     }
 
+    /** Hold every campaign email to one profile: the owner replied, or asked for a change. */
+    public function pauseProfile(int $listingId)
+    {
+        $this->svc->pauseProfile($listingId, (string) $this->request->getPost('note'));
+
+        return redirect()->to($this->back())->with('success', 'Emails to that profile are paused.');
+    }
+
+    public function resumeProfile(int $listingId)
+    {
+        $this->svc->resumeProfile($listingId);
+
+        return redirect()->to($this->back())->with('success', 'Emails to that profile can go again.');
+    }
+
     // ------------------------------------------------------------ internals
+
+    /** Back to an admin page only, never anywhere a posted value names. */
+    private function back(): string
+    {
+        $back = (string) $this->request->getPost('back');
+
+        return base_url(preg_match('~^admin/(communications(/\d+)?|edit/\d+)$~', $back) === 1 ? $back : 'admin/communications');
+    }
 
     /** @return array<string,mixed> */
     private function campaign(int $id): array
@@ -165,9 +191,19 @@ class AdminCommunications extends BaseController
     /** @return array<string,mixed> */
     private function input(): array
     {
-        $post = $this->request->getPost(['kind', 'name', 'subject', 'body', 'daily_limit', 'segment', 'site', 'group', 'province', 'source']);
+        $post  = $this->request->getPost(['kind', 'name', 'subject', 'body', 'daily_limit', 'segment', 'site', 'group', 'province', 'source']);
+        $input = array_map(static fn ($v) => is_string($v) ? $v : '', $post);
 
-        return array_map(static fn ($v) => is_string($v) ? $v : '', $post);
+        // A sequence's steps: only the three known keys, only strings.
+        $steps = $this->request->getPost('steps');
+        if (is_array($steps)) {
+            $input['steps'] = array_values(array_map(static fn ($st): array => is_array($st) ? array_map(
+                static fn ($v): string => is_string($v) ? $v : '',
+                array_intersect_key($st, ['subject' => 1, 'body' => 1, 'delay_days' => 1])
+            ) : [], $steps));
+        }
+
+        return $input;
     }
 
     /** @param array<string,mixed> $values */
@@ -186,6 +222,7 @@ class AdminCommunications extends BaseController
             'adminTo'   => config('Directory')->adminEmail(),
             'stats'     => null,
             'log'       => [],
+            'steps'     => [],
             'count'     => $campaign === null ? $audience->count($values) : null,
         ]);
     }

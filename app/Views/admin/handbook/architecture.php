@@ -55,6 +55,21 @@
         <li>One opt out for all: the footer link (<code>/unsubscribe/{token}</code>, one click via List-Unsubscribe-Post) stamps
             <code>comms_opt_out_at</code> and withdraws the monthly report; opting back in from <code>/business</code> lifts both.
             One email per address; any opted out profile on an address blocks the others. Links go to the profile's own site.</li>
+        <li><strong>Sequences</strong> (27 Nov 2026): a template with <code>steps</code> (claim sequence A1 to A3, Verified sequence B1 to B3)
+            stores each step in <code>xs_campaign_steps</code>; a recipient row stays queued between steps with <code>step</code> and its own
+            <code>next_send_at</code>, follow ups first. The Verified sequence starts empty and takes in imported profiles claimed since its
+            start (first email two days after the claim), closing their claim rows, so a profile is never in two sequences. Every send is checked
+            again; claimed, upgraded (<code>converted</code>) and opted out stop the row, while a paused profile (<code>comms_paused_at</code>,
+            set from the admin or by the owner's report) and an address mailed in the last 3 days are held. Every email that goes is a row in
+            <code>xs_campaign_messages</code> (daily limit, contact gap, claim link hash).</li>
+        <li><strong>Claim page</strong> <code>/claim/{token}</code> (<code>Claim</code>, <code>Communications\ClaimService</code>): a claim email's
+            button. GET only shows the profile, so a mail scanner cannot claim it; POSTs (CSRF) confirm (sign in through
+            <code>OwnerAccess::signInFor()</code>, stamps <code>claimed_at</code>), report a mistake (pauses the profile's emails, emails the admin)
+            or remove (unpublish, opt out with source <code>removal</code>). Each email's link works 14 days; none after a claim.</li>
+        <li><strong>SES bounces and complaints</strong>: <code>POST /hooks/ses</code> (<code>SesHook</code>, <code>SesNotificationService</code>),
+            CSRF, honeypot and bot trap exempt. Off until <code>ses.snsTopicArn</code> is set; checks the topic and the SNS signature (certificate
+            only from https sns.&lt;region&gt;.amazonaws.com). A permanent bounce or a complaint calls
+            <code>MarketingConsentService::suppress()</code>: every profile on the address opted out (source bounce or complaint).</li>
     </ul>
 
     <h3>Discovery and the category matcher</h3>

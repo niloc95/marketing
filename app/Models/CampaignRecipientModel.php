@@ -19,5 +19,5 @@ class CampaignRecipientModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $useTimestamps = true;
-    protected $allowedFields = ['campaign_id', 'listing_id', 'email', 'status', 'reason', 'attempts', 'sent_at'];
+    protected $allowedFields = ['campaign_id', 'listing_id', 'email', 'status', 'reason', 'attempts', 'sent_at', 'step', 'next_send_at', 'entered_at'];
 }
