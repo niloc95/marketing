@@ -1,6 +1,6 @@
 # Origin only reachable through Cloudflare
 
-Status: **web ports already done; SSH still open to all.** Console read by the owner
+Status: **done 26 Nov 2026.** SSH 22 now allows only 197.87.0.0/16, 197.90.0.0/16 and Lightsail browser SSH (owner, console; `ssh lightsail` checked from the Mac, sites 200). Undo: untick Restrict to IP address on the SSH rule. Earlier status: **web ports already done; SSH still open to all.** Console read by the owner
 26 Nov 2026 (one rule list covers IPv4 and IPv6): HTTP 80 and HTTPS 443 each allow 22
 sources, which is Cloudflare's 15 IPv4 plus 7 IPv6 ranges; SSH 22 allows any IPv4 or
 IPv6 address plus Lightsail browser SSH. Static IPv4 13.203.131.32, IPv6
