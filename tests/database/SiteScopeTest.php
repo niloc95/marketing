@@ -410,7 +410,7 @@ final class SiteScopeTest extends CIUnitTestCase
     /**
      * Medical first wording (owner, 16 Nov 2026): the button says "Add your
      * practice or business" ("Add profile" below 1280px) on both sites, and
-     * the footer offers a free practice profile, with South Africa named on
+     * the footer invites a practice or business, with South Africa named on
      * co.za only.
      */
     public function testBothHomesSayPracticeAndOnlyCoZaSaysSouthAfrica(): void

@@ -27,7 +27,7 @@ if ($verificationOffered) {
 ?>
 <?= $this->section('head') ?>
 <?= seo_meta([
-    'title'       => 'Create your free practice profile | ' . $siteName,
+    'title'       => 'Add your practice or business | ' . $siteName,
     'description' => 'Create a free practice or business profile on ' . $siteName . ' so local patients and customers can discover you, your services and your location. No monthly fee, no subscription.',
     'canonical'   => base_url('add-profile'),
     'alternates'  => 'add-profile',
