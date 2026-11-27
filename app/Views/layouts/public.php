@@ -161,10 +161,18 @@ foreach (config('Countries')->profiles as $code => $profile) {
                 <?php // No value, deliberately — see the comment above: this bar is the
                       // "fresh search from anywhere" gesture, so it starts empty even on
                       // a results page, where the hero form holds the current query. ?>
+                <?php // Every variable passed, even the defaults: CI4 shares view data, so
+                      // an omitted $value inherited the page's own (26 Nov 2026: a returning
+                      // patient's medical aid answer showed in this box on the booking page). ?>
                 <?= view('directory/_search_composer', [
-                    'listId' => 'search-suggest-header',
-                    'size'   => 'sm',
-                    'type'   => 'search',
+                    'listId'      => 'search-suggest-header',
+                    'value'       => '',
+                    'placeholder' => 'A practice, business, person or place',
+                    'ariaLabel'   => 'Discover local businesses',
+                    'size'        => 'sm',
+                    'type'        => 'search',
+                    'rotate'      => [],
+                    'suggest'     => true,
                 ], ['saveData' => false]) ?>
             </form>
             <nav class="nav">

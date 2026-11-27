@@ -133,6 +133,8 @@ class DemoFernwood extends BaseCommand
             'fri' => ['closed' => false, 'open' => $open, 'close' => $close, 'note' => ''],
             'sat' => ['closed' => false, 'open' => '08:00', 'close' => '12:00', 'note' => ''],
             'sun' => ['closed' => true, 'open' => '', 'close' => '', 'note' => ''],
+            // Closed on public holidays, so nothing asks the demo to answer them.
+            'holidays' => ['mode' => 'closed'],
         ]);
         $desc = '<p><strong>Fernwood Dental Studio</strong> is a family dental practice in Parkhurst, Johannesburg. '
             . 'We look after the whole family, from a first check up for a toddler to whitening before a wedding.</p>'
@@ -175,6 +177,7 @@ class DemoFernwood extends BaseCommand
             'geocode_precision' => 'manual', 'geocoding_status' => 'manual', 'trading_hours' => $hours('08:30', '16:30'),
             'phone' => '', 'email' => '', 'is_primary' => 0, 'sort_order' => 0, 'created_at' => $now, 'updated_at' => $now,
         ]);
+        $rosebank = (int) $db->insertID();
 
         $team = [];
         foreach (self::PEOPLE as $i => [$name, $role, $cred, $spec, $bio]) {
@@ -212,6 +215,19 @@ class DemoFernwood extends BaseCommand
             ]);
             $prov[$i] = (int) $db->insertID();
         }
+        // Dr Fourie keeps his own hours, as his bio says: Monday to Thursday in
+        // Parkhurst, Fridays at the Rosebank rooms. That gives the booking page
+        // its second place column (T33).
+        $db->table('booking_providers')->where('id', $prov[1])->update([
+            'hours_mode' => 'own', 'hours_seen' => (new \App\Services\Bookings\TeamService($id))->openingHoursFingerprint(),
+        ]);
+        foreach ([1, 2, 3, 4, 5] as $day) {
+            $db->table('booking_provider_hours')->insert([
+                'listing_id' => $id, 'provider_id' => $prov[1], 'weekday' => $day,
+                'start_time' => $day === 5 ? '08:30:00' : '08:00:00', 'end_time' => $day === 5 ? '16:30:00' : '17:00:00',
+                'breaks' => '[]', 'location_id' => $day === 5 ? $rosebank : null, 'created_at' => $now, 'updated_at' => $now,
+            ]);
+        }
         foreach (self::OFFERS as $p => $list) {
             foreach ($list as $s) {
                 $db->table('booking_provider_services')->insert(['listing_id' => $id, 'provider_id' => $prov[$p], 'service_id' => $svc[$s]]);
@@ -220,6 +236,7 @@ class DemoFernwood extends BaseCommand
 
         $settings = [
             'business.future_limit'               => '180',
+            'booking.default_appointment_status'  => 'confirmed',
             'booking.custom_field_1_enabled'      => '1',
             'booking.custom_field_1_title'        => 'Medical aid',
             'booking.custom_field_1_type'         => 'select',
@@ -305,7 +322,7 @@ class DemoFernwood extends BaseCommand
                     $past  = $end < $nowTz;
                     $db->table('booking_appointments')->insert([
                         'listing_id' => $id, 'reference' => 'pending-' . bin2hex(random_bytes(4)), 'hash' => bin2hex(random_bytes(16)),
-                        'provider_id' => $providerId, 'service_id' => $svc[$s], 'customer_id' => $customers[$c++ % count($customers)],
+                        'provider_id' => $providerId, 'service_id' => $svc[$s], 'customer_id' => $customers[1 + ($c++ % (count($customers) - 1))],
                         'start_at' => $start->setTimezone($utc)->format('Y-m-d H:i:s'), 'end_at' => $end->setTimezone($utc)->format('Y-m-d H:i:s'),
                         'hold_before_min' => 0, 'hold_after_min' => 0, 'stored_timezone' => 'Africa/Johannesburg',
                         'status' => $past ? ['cancelled', 'no_show'][mt_rand(0, 19)] ?? 'completed' : ($d >= 7 && mt_rand(0, 9) === 0 ? 'pending' : 'confirmed'),
@@ -319,5 +336,29 @@ class DemoFernwood extends BaseCommand
                 }
             }
         }
+
+        // Thabo Nkosi is the returning patient of the screenshots and the
+        // Bookings guide: two completed check ups with Dr Khumalo, six and
+        // twelve months ago, so "Booked here before?" has a real history.
+        foreach (['-12 months', '-6 months'] as $ago) {
+            // Back to that week's Monday: the practice is closed on Sundays.
+            $start = (new DateTimeImmutable('today', $tz))->modify($ago)->modify('monday this week')->setTime(9, 0);
+            $end   = $start->modify('+45 minutes');
+            $db->table('booking_appointments')->insert([
+                'listing_id' => $id, 'reference' => 'pending-' . bin2hex(random_bytes(4)), 'hash' => bin2hex(random_bytes(16)),
+                'provider_id' => $prov[0], 'service_id' => $svc[0], 'customer_id' => $customers[0],
+                'start_at' => $start->setTimezone($utc)->format('Y-m-d H:i:s'), 'end_at' => $end->setTimezone($utc)->format('Y-m-d H:i:s'),
+                'hold_before_min' => 0, 'hold_after_min' => 0, 'stored_timezone' => 'Africa/Johannesburg',
+                'status' => 'completed', 'source' => 'public', 'delivery_mode' => 'onsite', 'service_name' => self::SERVICES[0][0],
+                'service_duration_min' => self::SERVICES[0][1], 'price_cents' => self::SERVICES[0][2], 'currency' => 'ZAR',
+                'provider_name' => self::PEOPLE[0][0], 'location_name' => 'Parkhurst',
+                'location_address' => '12 Fernwood Avenue, Parkhurst, Johannesburg, Gauteng, 2193',
+                'payment_status' => 'none', 'reminder_sent' => 1, 'created_at' => $now, 'updated_at' => $now,
+            ]);
+            $apptId = (int) $db->insertID();
+            $db->table('booking_appointments')->where('id', $apptId)->update(['reference' => \App\Libraries\PaymentReference::make(\App\Libraries\PaymentReference::BOOKING, $apptId)]);
+        }
+        $db->table('booking_customers')->where('id', $customers[0])
+            ->update(['created_at' => gmdate('Y-m-d H:i:s', strtotime('-13 months'))]);
     }
 }
