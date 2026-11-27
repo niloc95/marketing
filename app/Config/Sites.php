@@ -72,11 +72,11 @@ class Sites extends BaseConfig
      */
     public array $appCopy = [
         'title'           => 'Discover local practices and businesses near you',
-        'footer'          => 'Discover local. Be discovered. A discovery platform for local practices, businesses, services, locations, professionals and opportunities. Create your free practice profile.',
+        'footer'          => 'Discover local. Be discovered. A discovery platform for local practices, businesses, services, locations, professionals and opportunities. Add your practice or business.',
         'siteDescription' => 'A local discovery and visibility platform for practices and businesses in the United Kingdom, the United States, Australia, New Zealand, Namibia, Botswana, Kenya and Nigeria. '
             . 'Discover practices, businesses, services, locations, professionals and opportunities near you, '
-            . 'or create a free practice profile: no monthly fee, no subscription, no obligation.',
-        'homeDescription' => 'Discover local practices, businesses, services, locations, professionals and opportunities near you. Create your free practice profile: no monthly fee, no subscription.',
+            . 'or add your practice or business.',
+        'homeDescription' => 'Discover local practices, businesses, services, locations, professionals and opportunities near you. Add your practice or business.',
         'homeLede'        => 'The local discovery platform for practices, businesses, professionals and locations near you.',
         // The home page's heading. It shared the key 'discoverTitle' with the
         // results page title until 17 Nov 2026, so .app showed that one here.

@@ -15,7 +15,7 @@ $siteName = config('Directory')->siteName();
 // mentions), since schema_item_list()'s default #list would collide.
 // All three come from data the controller already loaded, so no extra queries.
 $canonical   = base_url('/');
-$description = site_copy('homeDescription', 'Discover South African practices, businesses, services, locations, professionals and opportunities. Create your free practice profile: no monthly fee, no subscription.');
+$description = site_copy('homeDescription', 'Discover South African practices, businesses, services, locations, professionals and opportunities. Add your practice or business.');
 
 $homeLists = [];
 if ($featured !== []) {

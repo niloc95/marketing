@@ -410,7 +410,7 @@ final class SiteScopeTest extends CIUnitTestCase
     /**
      * Medical first wording (owner, 16 Nov 2026): the button says "Add your
      * practice or business" ("Add profile" below 1280px) on both sites, and
-     * the footer offers a free practice profile, with South Africa named on
+     * the footer invites a practice or business, with South Africa named on
      * co.za only.
      */
     public function testBothHomesSayPracticeAndOnlyCoZaSaysSouthAfrica(): void
@@ -423,7 +423,7 @@ final class SiteScopeTest extends CIUnitTestCase
         foreach (['za' => $za, 'app' => $app] as $site => $html) {
             $this->assertStringContainsString('<strong class="xl:hidden">Add profile</strong>', $html, $site);
             $this->assertStringContainsString('<strong class="hidden xl:inline">Add your practice or business</strong>', $html, $site);
-            $this->assertStringContainsString('Create your free practice profile.', $html, $site . ' footer');
+            $this->assertStringContainsString('Add your practice or business.', $html, $site . ' footer');
             $this->assertStringNotContainsString('Create your free business profile', $html, $site);
         }
         $this->assertStringContainsString('A discovery platform for South African practices, businesses', $za);

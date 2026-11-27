@@ -20,7 +20,7 @@ class Directory extends BaseConfig
      */
     public string $siteDescription = 'A local discovery and visibility platform for practices and businesses, built for South Africa. '
         . 'Discover practices, businesses, services, locations, professionals and opportunities near you, '
-        . 'or create a free practice profile: no monthly fee, no subscription, no obligation.';
+        . 'or add your practice or business.';
 
     public string $slogan = 'Discover local. Be discovered.';
 
