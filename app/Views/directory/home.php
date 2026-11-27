@@ -153,8 +153,11 @@ $moments += [
                   // the results page still has them for refining.
                   //
                   // The examples are real category-and-town pairs with listings
-                  // behind them (DirectoryService::searchExamples()), so following
-                  // one never lands on nothing. ?>
+                  // behind them (DirectoryService::searchExamples()). They only
+                  // rotate in the box's placeholder now: the four example buttons
+                  // under the box were removed 27 Nov 2026 (owner), as no visitor
+                  // had clicked one from the home page since logs began (23 Oct),
+                  // and the "Find a doctor or dentist" row does that job. ?>
             <?php $examples = $examples ?? []; ?>
             <form class="search-form home-search" method="get" action="<?= base_url('directory') ?>">
                 <?= view('directory/_search_composer', [
@@ -185,14 +188,6 @@ $moments += [
                         <?php endforeach; ?>
                     </ul>
                 </nav>
-            <?php endif; ?>
-
-            <?php if ($examples !== []): ?>
-                <ul class="home-examples" aria-label="Things to discover">
-                    <?php foreach (array_slice($examples, 0, 4) as $example): ?>
-                        <li><a href="<?= esc(base_url('directory') . '?q=' . rawurlencode($example), 'attr') ?>"><?= esc($example) ?></a></li>
-                    <?php endforeach; ?>
-                </ul>
             <?php endif; ?>
 
             <div class="home-open-foot">
