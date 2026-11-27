@@ -67,7 +67,7 @@ $benefits = [
                     <?php endforeach; ?>
                 </ul>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= $onSignup ? '#listing-form' : base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start free' : 'Add your practice or business' ?></a>
+                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start with a profile' : 'Add your practice or business' ?></a>
             </div>
 
             <div class="plan-card plan-card-featured pricing-card">
@@ -94,7 +94,7 @@ $benefits = [
                     Cancel any time; your profile stays free.
                 </p>
                 <a class="btn btn-accent btn-block plan-cta" href="<?= $onSignup ? '#listing-form' : base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="plus">Start free, add Plus</a>
+                   data-track="pricing_cta" data-track-label="plus">Start now, add Plus later</a>
             </div>
         </div>
 <?php if (! $onSignup): ?>

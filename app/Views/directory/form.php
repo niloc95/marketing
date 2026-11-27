@@ -58,7 +58,7 @@ $vHours = is_array($old['hours'] ?? null) ? $old['hours'] : [];
         <?php if (! empty($plusUsd) && ! empty($plusRand)): ?>
             <div class="plan-choose">
                 <span class="eyebrow">Your practice profile</span>
-                <h1 class="plan-choose-title">Start free. Add Plus when you are ready.</h1>
+                <h1 class="plan-choose-title">Start with your profile. Add Plus when you are ready.</h1>
                 <?= view('directory/_plus_compare', ['usd' => $plusUsd, 'rand' => $plusRand, 'onSignup' => true], ['saveData' => false]) ?>
             </div>
         <?php endif; ?>

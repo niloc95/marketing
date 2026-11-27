@@ -470,8 +470,8 @@ $moments += [
                     <a class="btn btn-accent home-cta" href="<?= base_url('add-profile?plan=free') ?>">Add your practice or business</a>
                 <?php endif; ?>
                 <p class="home-fine">
-                    A free practice profile covers your practice information, services, contact details, address
-                    and map location, photos and opening hours. No monthly fee. No subscription. No obligation.
+                    Your profile covers your practice or business information, services, contact details, address
+                    and map location, photos and opening hours.
                 </p>
                 <?php // The pages the footer alone linked to, so the home page passes
                       // them its weight too. Most are co.za's (Config\Sites::$zaOnlyPaths). ?>

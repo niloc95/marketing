@@ -83,7 +83,7 @@ final class PricingPageTest extends CIUnitTestCase
 
         $html = $this->text($this->page('pricing'));
 
-        $this->assertStringContainsString('A free practice profile', $html);
+        $this->assertStringContainsString('Your profile', $html);
         $this->assertStringNotContainsString('R30.00', $html);
     }
 

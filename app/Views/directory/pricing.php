@@ -107,10 +107,10 @@ if ($paid) {
 
         <?php if (! $paid): ?>
             <div class="panel">
-                <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">A free practice profile</h2>
+                <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">Your profile</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300">
                     Your practice information, photos, services, hours and contact details, discovered on
-                    the platform, on the map and in your category. No monthly fee, no subscription and no obligation.
+                    the platform, on the map and in your category.
                 </p>
                 <p class="mt-4"><a class="btn btn-accent" href="<?= base_url('add-profile') ?>">Add your practice or business</a></p>
             </div>
