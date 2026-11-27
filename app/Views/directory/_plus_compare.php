@@ -67,7 +67,7 @@ $benefits = [
                     <?php endforeach; ?>
                 </ul>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= $onSignup ? '#listing-form' : base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start free' : 'Create Your FREE Practice Profile' ?></a>
+                   data-track="pricing_cta" data-track-label="free"><?= $onSignup ? 'Start free' : 'Add your practice or business' ?></a>
             </div>
 
             <div class="plan-card plan-card-featured pricing-card">

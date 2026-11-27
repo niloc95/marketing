@@ -132,7 +132,7 @@ final class SignupModesTest extends CIUnitTestCase
 
         $home = $this->page('/');
         $this->assertStringNotContainsString('add-profile/verified', $home, 'no button advertises a badge we cannot sell');
-        $this->assertStringContainsString('Create your FREE practice profile', $home);
+        $this->assertStringContainsString('Add your practice or business', $home);
     }
 
     public function testTheSiteButtonsKeepTheFreeListingForADirectVisitor(): void

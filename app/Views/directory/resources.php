@@ -84,7 +84,7 @@ $canonical = base_url('resources');
         <div class="section-head">
             <h2>Ready to be found?</h2>
             <p>A free business profile takes a couple of minutes. No monthly fee. No subscription. No obligation.</p>
-            <a class="btn btn-accent mt-6" href="<?= base_url('add-profile?plan=free') ?>">Create your FREE Business Profile</a>
+            <a class="btn btn-accent mt-6" href="<?= base_url('add-profile?plan=free') ?>">Add your practice or business</a>
         </div>
     </div>
 </section>

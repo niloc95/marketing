@@ -126,7 +126,7 @@ $benefits = array_merge($benefits, [
                 </ul>
                 <p class="hint plan-terms">Free for any practice or business with a South African address.</p>
                 <a class="btn btn-ghost btn-block plan-cta" href="<?= base_url('add-profile?plan=free') ?>"
-                   data-track="pricing_cta" data-track-label="free">Create Your FREE Practice Profile</a>
+                   data-track="pricing_cta" data-track-label="free">Add your practice or business</a>
             </div>
 
             <div class="plan-card plan-card-featured pricing-card">

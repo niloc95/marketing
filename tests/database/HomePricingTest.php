@@ -51,7 +51,7 @@ final class HomePricingTest extends CIUnitTestCase
     {
         $html = $this->section();
 
-        $free     = strpos($html, 'Create Your FREE Practice Profile');
+        $free     = strpos($html, 'Add your practice or business');
         $verified = strpos($html, 'Get Your Practice Verified');
         $this->assertNotFalse($free);
         $this->assertNotFalse($verified);
@@ -102,7 +102,7 @@ final class HomePricingTest extends CIUnitTestCase
 
         $this->assertStringNotContainsString('id="pricing"', $html);
         $this->assertStringNotContainsString('per month', $html);
-        $this->assertStringContainsString('Create your FREE Practice Profile', $html, 'the rest of the page still renders');
+        $this->assertStringContainsString('Add your practice or business', $html, 'the rest of the page still renders');
     }
 
     /** The pricing section's markup alone, so other parts of the page cannot satisfy an assertion. */
