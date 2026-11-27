@@ -3746,14 +3746,16 @@
      the photo column pushed all of it in). A grid on the card with the body
      as display: contents, so its children are the grid's items without a
      change to the markup: the photo spans the name and role rows, the rest
-     span both columns. */
-  .team-member { @apply grid grid-cols-[auto_minmax(0,1fr)] gap-x-4; }
+     span every column. A third column on the right holds the Book button,
+     level with the name (owner, 27 Nov 2026: at the foot of the card it
+     confused people); on a phone it drops under the name and role. */
+  .team-member { @apply grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-4; }
   .team-member + .team-member { @apply border-t border-slate-100 pt-5; }
   .dark .team-member + .team-member { @apply border-slate-800; }
 
   .team-member-body        { @apply contents; }
   .team-member > .team-avatar          { @apply col-start-1 row-span-2 row-start-1; }
-  .team-member-body > *                { @apply col-span-2; }
+  .team-member-body > *                { @apply col-span-full; }
   .team-member-body > .team-member-name { @apply col-span-1 col-start-2 row-start-1 self-end; }
   .team-member-body > .team-member-role { @apply col-span-1 col-start-2 row-start-2 self-start; }
   /* No role: the name alone, centred on the photo. */
@@ -3788,9 +3790,8 @@
 
   /* A bookable person's Book button on their team card (_team_booking.php;
      only the button since 19 Nov 2026). */
-  .team-booking   { @apply mt-4 border-t border-slate-100 pt-4; }
-  .dark .team-booking { @apply border-slate-800; }
-  .team-book      { @apply gap-2; }
+  .team-member-body > .team-booking { @apply col-span-full row-start-3 mt-3 sm:col-span-1 sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:self-center; }
+  .team-book      { @apply gap-2 whitespace-nowrap; }
 
   /* The booking page's "With" choices, with a headshot when there is one. */
   .book-who       { @apply gap-2; }
