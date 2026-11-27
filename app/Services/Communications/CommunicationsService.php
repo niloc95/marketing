@@ -200,7 +200,7 @@ class CommunicationsService
      * The steps of a campaign, in order: the stored steps of a sequence, or
      * the one off campaign as its only step. Each with its button.
      *
-     * @return list<array{step:int,subject:string,body:string,delay_days:int,button:array{0:string,1:string}}>
+     * @return list<array{step:int,subject:string,body:string,delay_days:int,button:array{0:string,1:string},extras:list<array{0:string,1:string}>}>
      */
     public function stepsOf(array $campaign): array
     {
@@ -208,7 +208,7 @@ class CommunicationsService
         if (empty($campaign['sequence'])) {
             return [[
                 'step' => 1, 'subject' => (string) $campaign['subject'], 'body' => (string) $campaign['body'],
-                'delay_days' => 0, 'button' => $template['button'] ?? ['Open my profile', 'business'],
+                'delay_days' => 0, 'button' => $template['button'] ?? ['Open my profile', 'business'], 'extras' => [],
             ]];
         }
 
@@ -219,6 +219,7 @@ class CommunicationsService
                 'step' => $n, 'subject' => (string) $row['subject'], 'body' => (string) $row['body'],
                 'delay_days' => (int) $row['delay_days'],
                 'button' => $template['steps'][$n - 1]['button'] ?? ['Open my profile', 'business'],
+                'extras' => $template['steps'][$n - 1]['extras'] ?? [],
             ];
         }
 
@@ -681,7 +682,7 @@ class CommunicationsService
     /** The campaign as the renderer wants one step of it. */
     private static function asStep(array $campaign, array $step): array
     {
-        return ['subject' => $step['subject'], 'body' => $step['body'], 'button' => $step['button']] + $campaign;
+        return ['subject' => $step['subject'], 'body' => $step['body'], 'button' => $step['button'], 'extras' => $step['extras'] ?? []] + $campaign;
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Libraries\TokenHash;
 use App\Services\DirectoryListingMutationService;
 use App\Services\GoogleDataService;
 use App\Services\MarketingConsentService;
+use Config\Documents;
 use Config\Sites;
 
 /**
@@ -75,6 +76,7 @@ class CampaignRenderer
             'unsubscribe' => $unsubscribe,
             'signIn'      => $target === 'signin',
             'claim'       => $target === 'claim',
+            'extras'      => $this->extras((array) ($campaign['extras'] ?? []), $listing),
             'claimDays'   => $config->claimLinkDays,
         ], ['saveData' => false]);
 
@@ -151,6 +153,67 @@ class CampaignRenderer
         } catch (\Throwable) {
             return 0;
         }
+    }
+
+    /**
+     * The "See it for yourself" links of a step: [label, url] pairs, for a
+     * co.za profile only (the demo profile and both guides are South African).
+     * A demo profile or document that is not there is left out, never an error.
+     *
+     * @param list<array{0:string,1:string}> $extras [label, target]
+     * @return list<array{0:string,1:string}>
+     */
+    public function extras(array $extras, array $listing): array
+    {
+        if ($extras === [] || service('site')->forRow($listing) === Sites::APP) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($extras as [$label, $target]) {
+            $url = match (true) {
+                $target === 'demo_profile' => ($demo = $this->demo()) !== null ? listing_url($demo) : null,
+                $target === 'demo_booking' => ($demo = $this->demo()) !== null && bookings_in_premium(Sites::ZA)
+                    ? listing_site_url($demo, 'directory/' . $demo['slug'] . '/book') : null,
+                str_starts_with($target, 'doc:') => self::documentUrl(substr($target, 4)),
+                default => null,
+            };
+            if ($url !== null) {
+                $out[] = [$label, $url];
+            }
+        }
+
+        return $out;
+    }
+
+    /** A published library PDF on co.za, with the ?v= stamp /resources uses, or null. */
+    public static function documentUrl(string $key): ?string
+    {
+        $library = config('Documents');
+        $doc     = $library->published[$key] ?? null;
+        $path    = $library->publishedPath($key);
+        if ($doc === null || $path === null) {
+            return null;
+        }
+
+        return site_url_for(Sites::ZA, Documents::PUBLIC_DIR . basename((string) $doc['file'])) . '?v=' . filemtime($path);
+    }
+
+    /** @var array<string,mixed>|false|null the demo profile, looked up once (false = none) */
+    private array|false|null $demo = null;
+
+    /** @return array<string,mixed>|null */
+    private function demo(): ?array
+    {
+        if ($this->demo === null) {
+            $row        = db_connect()->table('directory_listings')
+                ->where('slug', config('Campaigns')->demoSlug)->where('is_demo', 1)
+                ->where('status', 'published')->where('deleted_at', null)
+                ->get()->getRowArray();
+            $this->demo = is_array($row) ? $row : false;
+        }
+
+        return $this->demo === false ? null : $this->demo;
     }
 
     /**

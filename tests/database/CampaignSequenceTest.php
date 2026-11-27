@@ -180,7 +180,8 @@ final class CampaignSequenceTest extends CIUnitTestCase
         $svc = new CommunicationsService();
         foreach (config('Campaigns')->kinds as $key => $kind) {
             foreach ($kind['steps'] ?? [['subject' => $kind['subject'], 'paragraphs' => $kind['paragraphs'], 'button' => $kind['button']]] as $step) {
-                $text = $step['subject'] . "\n" . implode("\n", $step['paragraphs']) . "\n" . $step['button'][0];
+                $text = $step['subject'] . "\n" . implode("\n", $step['paragraphs']) . "\n" . $step['button'][0]
+                    . "\n" . implode("\n", array_column($step['extras'] ?? [], 0));
                 $this->assertDoesNotMatchRegularExpression('/\bfree\b/i', $text, $key . ': say costs nothing, never free');
                 $this->assertDoesNotMatchRegularExpression('/\b(listing|directory|badge)\b/i', $text, $key);
                 $this->assertDoesNotMatchRegularExpression('/[\x{2014}\x{2013}]|\b\p{L}+-\p{L}+\b/u', $text, $key);
@@ -206,6 +207,62 @@ final class CampaignSequenceTest extends CIUnitTestCase
         $this->assertStringContainsString('Plus adds tools', $text);
         $this->assertStringNotContainsString('Verified', $text);
         $this->assertStringNotContainsString('South Africa', preg_replace('/WebScheduler \(Pty\) Ltd, registered in South Africa/', '', $text));
+    }
+
+    // ------------------------------------------------------------ extra links
+
+    public function testCoZaEmailsCarryTheDemoAndGuidesMatchedToTheStep(): void
+    {
+        $this->demoProfile();
+        $id  = $this->listing();
+        $svc = new CommunicationsService();
+
+        $claim = $svc->find($this->draftOf($svc, 'claim_sequence'));
+        $a1    = $svc->preview($claim, $id, 1)['html'];
+        $this->assertStringContainsString('See it for yourself', $a1);
+        $this->assertStringContainsString('/directory/fernwood-dental-studio"', $a1);
+        $this->assertMatchesRegularExpression('~assets/documents/webscheduler-local-profile-guide\.pdf\?v=\d+~', $a1);
+        $a2 = $svc->preview($claim, $id, 2)['html'];
+        $this->assertStringContainsString('/directory/fernwood-dental-studio"', $a2);
+        $this->assertStringNotContainsString('profile-guide', $a2);
+
+        $verified = $svc->find($this->draftOf($svc, 'verified_sequence'));
+        $b2       = $svc->preview($verified, $id, 2)['html'];
+        $this->assertStringContainsString('bookings-guide.pdf?v=', $b2);
+        if (bookings_in_premium('za')) {
+            $this->assertStringContainsString('/directory/fernwood-dental-studio/book"', $b2);
+        } else {
+            $this->assertStringNotContainsString('/book"', $b2, 'never sell bookings while they are off');
+        }
+    }
+
+    public function testAppEmailsHaveNoSouthAfricanLinks(): void
+    {
+        $this->demoProfile();
+        $this->setEnv('sites.app.enabled', 'true');
+        Services::resetSingle('site');
+        $id  = $this->listing(['country' => 'Kenya', 'country_code' => 'KE']);
+        $svc = new CommunicationsService();
+
+        foreach (['claim_sequence', 'verified_sequence'] as $kind) {
+            $campaign = $svc->find($this->draftOf($svc, $kind));
+            for ($n = 1; $n <= 3; $n++) {
+                $html = $svc->preview($campaign, $id, $n)['html'];
+                $this->assertStringNotContainsString('See it for yourself', $html, $kind . ' ' . $n);
+                $this->assertStringNotContainsString('fernwood', strtolower($html));
+                $this->assertStringNotContainsString('guide.pdf', $html);
+            }
+        }
+    }
+
+    public function testAMissingDemoProfileOnlyDropsItsLink(): void
+    {
+        $id   = $this->listing();
+        $svc  = new CommunicationsService();
+        $html = $svc->preview($svc->find($this->draftOf($svc, 'claim_sequence')), $id, 1)['html'];
+
+        $this->assertStringNotContainsString('fernwood', strtolower($html));
+        $this->assertStringContainsString('profile-guide.pdf?v=', $html);
     }
 
     // ------------------------------------------------------------ claim page
@@ -368,6 +425,14 @@ final class CampaignSequenceTest extends CIUnitTestCase
         $db->table('accounts')->insert(['email' => 'acct' . $listingId . '@example.com', 'status' => 'active', 'created_at' => date('Y-m-d H:i:s')]);
         $db->table('business_members')->insert([
             'account_id' => (int) $db->insertID(), 'listing_id' => $listingId, 'role' => 'admin', 'status' => 'active', 'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
+    private function demoProfile(): void
+    {
+        $this->listing([
+            'display_name' => 'Fernwood Dental Studio', 'slug' => 'fernwood-dental-studio', 'is_demo' => 1,
+            'type' => 'practice', 'signup_source' => 'demo', 'email' => 'demo@example.com',
         ]);
     }
 

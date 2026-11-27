@@ -61,7 +61,8 @@
             start (first email two days after the claim), closing their claim rows, so a profile is never in two sequences. Every send is checked
             again; claimed, upgraded (<code>converted</code>) and opted out stop the row, while a paused profile (<code>comms_paused_at</code>,
             set from the admin or by the owner's report) and an address mailed in the last 3 days are held. Every email that goes is a row in
-            <code>xs_campaign_messages</code> (daily limit, contact gap, claim link hash).</li>
+            <code>xs_campaign_messages</code> (daily limit, contact gap, claim link hash). Steps can carry "See it for yourself" links
+            (<code>extras</code>: the Fernwood demo profile or booking page, the profile and bookings guides), co.za profiles only.</li>
         <li><strong>Claim page</strong> <code>/claim/{token}</code> (<code>Claim</code>, <code>Communications\ClaimService</code>): a claim email's
             button. GET only shows the profile, so a mail scanner cannot claim it; POSTs (CSRF) confirm (sign in through
             <code>OwnerAccess::signInFor()</code>, stamps <code>claimed_at</code>), report a mistake (pauses the profile's emails, emails the admin)

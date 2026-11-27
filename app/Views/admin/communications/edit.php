@@ -189,7 +189,7 @@ $reasons = [
                     <?php foreach ($kind['steps'] as $i => $tpl): ?>
                         <?php $st = $formSteps[$i] ?? ['subject' => $tpl['subject'], 'body' => implode("\n\n", $tpl['paragraphs']), 'delay_days' => $tpl['delay_days']]; $n = $i + 1; ?>
                         <fieldset class="mb-6 rounded-surface border border-slate-200 p-4 dark:border-slate-700">
-                            <legend class="px-1 text-sm font-semibold text-slate-900 dark:text-white">Email <?= $n ?> · button: <?= esc($tpl['button'][0]) ?></legend>
+                            <legend class="px-1 text-sm font-semibold text-slate-900 dark:text-white">Email <?= $n ?> · button: <?= esc($tpl['button'][0]) ?><?php if (! empty($tpl['extras'])): ?> · links (co.za only): <?= esc(implode(', ', array_column($tpl['extras'], 0))) ?><?php endif; ?></legend>
                             <div class="field">
                                 <label for="s<?= $n ?>-delay"><?= $n === 1 ? ($seqKey === CommunicationsService::SEQUENCE_VERIFIED ? 'Days after the claim' : 'Days after the start (0 = in the first batches)') : 'Days after email ' . ($n - 1) ?></label>
                                 <input type="number" id="s<?= $n ?>-delay" name="steps[<?= $i ?>][delay_days]" required min="<?= $n === 1 ? 0 : 1 ?>" max="<?= (int) $config->maxDelayDays ?>" value="<?= esc((string) $st['delay_days'], 'attr') ?>">

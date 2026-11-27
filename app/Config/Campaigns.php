@@ -27,6 +27,13 @@ use CodeIgniter\Config\BaseConfig;
  * - upgrade: /verified on co.za, /plus on .app, on the profile's own site
  * - business: /business on the profile's own site
  * - profile: the public profile page
+ *
+ * Extra links under the button (a sequence step's `extras`, owner 27 Nov
+ * 2026, "See it for yourself"), co.za profiles only: the demo profile and
+ * both guides are South African, so an .app email has no box.
+ * - demo_profile: the demo profile ($demoSlug, is_demo)
+ * - demo_booking: its booking page, only while bookings are sold
+ * - doc:<key>: a Config\Documents published PDF, with its ?v= stamp
  */
 class Campaigns extends BaseConfig
 {
@@ -80,6 +87,7 @@ class Campaigns extends BaseConfig
             'steps'    => [
                 [
                     'subject'    => 'Your {noun} profile on {site}',
+                    'extras'     => [['An example practice profile', 'demo_profile'], ['Profile guide (PDF)', 'doc:profile-guide']],
                     'delay_days' => 0,
                     'button'     => ['Claim my profile', 'claim'],
                     'paragraphs' => [
@@ -92,6 +100,7 @@ class Campaigns extends BaseConfig
                 ],
                 [
                     'subject'    => 'A private way for {audience} to contact your {noun}',
+                    'extras'     => [['An example practice profile', 'demo_profile']],
                     'delay_days' => 4,
                     'button'     => ['Claim my profile', 'claim'],
                     'paragraphs' => [
@@ -104,6 +113,7 @@ class Campaigns extends BaseConfig
                 ],
                 [
                     'subject'    => 'Is your profile on {site} up to date?',
+                    'extras'     => [['Profile guide (PDF)', 'doc:profile-guide']],
                     'delay_days' => 6,
                     'button'     => ['Check my profile', 'claim'],
                     'paragraphs' => [
@@ -124,6 +134,7 @@ class Campaigns extends BaseConfig
             'steps'    => [
                 [
                     'subject'    => 'Thank you for claiming {name}',
+                    'extras'     => [['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 2,
                     'button'     => ['See what {plan} adds', 'upgrade'],
                     'paragraphs' => [
@@ -138,6 +149,7 @@ class Campaigns extends BaseConfig
                 ],
                 [
                     'subject'    => 'What happens after {audience} discover {name}',
+                    'extras'     => [['Try booking at our demo practice', 'demo_booking'], ['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 5,
                     'button'     => ['See booking features', 'upgrade'],
                     'paragraphs' => [
@@ -150,6 +162,7 @@ class Campaigns extends BaseConfig
                 ],
                 [
                     'subject'    => '{name} on {site}',
+                    'extras'     => [['An example practice profile', 'demo_profile'], ['Bookings guide (PDF)', 'doc:bookings-guide']],
                     'delay_days' => 7,
                     'button'     => ['See {plan}', 'upgrade'],
                     'paragraphs' => [
@@ -189,6 +202,9 @@ class Campaigns extends BaseConfig
     ];
 
     public string $defaultSource = 'public practice and business listings';
+
+    /** The demo profile the extra links show (App\Commands\DemoFernwood::SLUG). */
+    public string $demoSlug = 'fernwood-dental-studio';
 
     /** Highest daily limit the form accepts. */
     public int $maxDailyLimit = 500;

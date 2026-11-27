@@ -510,6 +510,9 @@ is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log)
   shows (mail scanners open links), POSTs confirm / report / remove with CSRF. One token per
   email, SHA-256 in `xs_campaign_messages.link_hash`, 14 days, refused once claimed. Never put
   a sign in link (`/manage/{token}`) back on a claim email.
+- **Extra links** per step (`extras`: `demo_profile`, `demo_booking`, `doc:<key>`) render as a
+  "See it for yourself" box, co.za profiles only (Fernwood and both guides are South African);
+  `CampaignRenderer::extras()` drops anything missing. Admin edits wording, not links.
 - **SES bounces**: `POST /hooks/ses` (`SesNotificationService`), off until `ses.snsTopicArn`;
   SNS signature + topic checked; hard bounce or complaint → `MarketingConsentService::suppress()`.
 - **No bulk send to production without the owner's OK**, the POPIA basis and an SES
