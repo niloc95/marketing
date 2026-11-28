@@ -105,6 +105,29 @@ class MarketingConsentService
     }
 
     /**
+     * Opt an address out of every campaign, on every profile that carries it:
+     * a hard bounce or a spam complaint reported by Amazon SES
+     * (SesNotificationService), or a removal. Keeps the first date where one
+     * is set. Returns how many profiles changed.
+     */
+    public function suppress(string $email, string $source): int
+    {
+        $email = strtolower(trim($email));
+        if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return 0;
+        }
+        $db  = db_connect();
+        $ids = array_column($db->table('directory_listings')->select('id')
+            ->where('LOWER(TRIM(email)) = ' . $db->escape($email), null, false)->where('comms_opt_out_at', null)
+            ->get()->getResultArray(), 'id');
+        foreach ($ids as $id) {
+            $this->optOutOfCommunications((int) $id, $source);
+        }
+
+        return count($ids);
+    }
+
+    /**
      * The unsubscribe link for a listing's report email footer (and its
      * List-Unsubscribe header). The token is minted on first use, so listings
      * that predate the column get one the first time a send asks.

@@ -162,7 +162,7 @@ final class CommunicationsTest extends CIUnitTestCase
         $this->assertSame(CampaignModel::STATUS_SENDING, $svc->find($id)['status']);
 
         // Tomorrow: move today's sends back a day.
-        db_connect()->table('campaign_recipients')->where('campaign_id', $id)->where('status', 'sent')
+        db_connect()->table('campaign_messages')->where('campaign_id', $id)
             ->update(['sent_at' => date('Y-m-d H:i:s', strtotime('-1 day'))]);
         $this->assertSame(2, $svc->sendDue(10)['sent']);
         $this->assertSame(CampaignModel::STATUS_DONE, $svc->find($id)['status']);
@@ -214,7 +214,7 @@ final class CommunicationsTest extends CIUnitTestCase
 
     // ------------------------------------------------------------ the email
 
-    public function testTheClaimEmailCarriesTheSignInLinkAndOneClickUnsubscribe(): void
+    public function testTheClaimEmailCarriesAClaimLinkAndOneClickUnsubscribe(): void
     {
         $id  = $this->listing(['signup_source' => 'import-lenmed', 'display_name' => 'Dr Thandi Mokoena']);
         $svc = new CommunicationsService();
@@ -225,12 +225,17 @@ final class CommunicationsTest extends CIUnitTestCase
         $svc->sendDue(10);
 
         $body = (string) ($this->email->archive['body'] ?? '');
-        $this->assertStringContainsString('Dr Thandi Mokoena has a free practice profile', $body);
-        $this->assertStringContainsString('Lenmed hospital group', $body);
-        $this->assertStringContainsString('/manage/', $body, 'a live sign in link');
+        $this->assertStringContainsString('Dr Thandi Mokoena has a practice profile', $body);
+        $this->assertStringNotContainsString('Lenmed', $body, 'no "we created it from" line (owner, 27 Nov 2026)');
+        $this->assertStringNotContainsString('We created it', $body);
+        $this->assertStringContainsString('/claim/', $body, 'a live claim page link');
+        $this->assertStringNotContainsString('/manage/', $body, 'never a link that signs in on GET');
         $this->assertStringNotContainsString('appeared', $body, 'no "0 times in Google"');
         $this->assertStringContainsString('One-Click', implode("\n", (array) ($this->email->archive['headers'] ?? [])) . ($this->email->archive['headerString'] ?? '') . json_encode($this->email->archive));
-        $this->assertNotEmpty((new DirectoryListingModel())->find($id)['manage_token']);
+        $this->assertEmpty((new DirectoryListingModel())->find($id)['manage_token']);
+        $message = db_connect()->table('campaign_messages')->where('listing_id', $id)->get()->getRowArray();
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', (string) $message['link_hash']);
+        $this->assertStringNotContainsString((string) $message['link_hash'], $body, 'only the hash is stored, never the link');
     }
 
     public function testTheUpgradeEmailOnAppLinksToPlusOnAppWithNoRand(): void
@@ -287,7 +292,7 @@ final class CommunicationsTest extends CIUnitTestCase
         foreach ([
             'admin/communications'                         => 'Claim your practice profile',
             'admin/communications/new'                     => 'Upgrade to Verified or Plus',
-            'admin/communications/new?kind=claim'          => 'Claim my free profile',
+            'admin/communications/new?kind=claim'          => 'Claim my profile',
             'admin/communications/' . $id                  => 'Send yourself a test',
             'admin/communications/' . $id . '/preview'     => 'Open the email as sent',
         ] as $path => $text) {
@@ -306,7 +311,7 @@ final class CommunicationsTest extends CIUnitTestCase
         }
         $raw = $as->get('admin/communications/' . $id . '/raw');
         $raw->assertStatus(200);
-        $raw->assertSee('Claim my free profile');
+        $raw->assertSee('Claim my profile');
         $raw->assertSee('Registration number 2026/138798/07');
         // CI4 writes the CSP in send(), which a feature test never reaches.
         $response = $raw->response();

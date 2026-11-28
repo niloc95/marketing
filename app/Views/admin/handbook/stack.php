@@ -11,7 +11,7 @@
             <tbody>
                 <tr><td>Server</td><td>One AWS Lightsail instance (2 vCPU, 4 GB), Ubuntu 24.04, Apache 2.4 with PHP 8.3 FPM, MySQL 8.0. Reached with <code>ssh lightsail</code>. App root <code>/var/www/listing/directory-app</code>, brand site <code>/var/www/marketing</code>.</td></tr>
                 <tr><td>Edge</td><td>Cloudflare in Full (strict) with origin certificates per domain; Access in front of <code>/admin*</code>; a scanner block rule; AI Crawl Control. HTML is never edge cached.</td></tr>
-                <tr><td>Mail</td><td>Amazon SES on the <code>mail.</code> subdomain, only through <code>App\Libraries\Mailer</code>. The apex SPF is Microsoft 365 only. Mailpit on dev.</td></tr>
+                <tr><td>Mail</td><td>Amazon SES on the <code>mail.</code> subdomain, only through <code>App\Libraries\Mailer</code>; bounce and complaint notices back through Amazon SNS to <code>/hooks/ses</code>. The apex SPF is Microsoft 365 only. Mailpit on dev.</td></tr>
                 <tr><td>Payments</td><td>Paystack for every new payment (in page checkout, webhook on co.za); PayFast for older subscriptions until they move. Bookings deposits go to the business's own gateway.</td></tr>
                 <tr><td>Maps and addresses</td><td>Mapbox for address lookup (Nominatim fallback), Nominatim alone for finding a place by name (GET address-place, one lookup per press of Find), Leaflet with CARTO tiles for maps.</td></tr>
                 <tr><td>Rich text</td><td>Tiptap 3 (on ProseMirror), self hosted, for the profile description and a person's qualifications. Built by <code>npm run editor:build</code> from <code>resources/editor/rich-editor.js</code>; stored HTML is cleaned by <code>App\Libraries\RichText</code>.</td></tr>

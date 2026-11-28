@@ -31,6 +31,7 @@ use App\Services\Communications\CommunicationsService;
  * @var array<string,mixed>|null      $stats    CommunicationsService::stats()
  * @var list<array<string,mixed>>     $log
  * @var int|null                      $count    profiles the audience reaches now (new and draft)
+ * @var list<array<string,mixed>>     $steps    the campaign's steps (CommunicationsService::stepsOf), empty when new
  */
 $v       = static fn (string $f): string => (string) ($values[$f] ?? '');
 $err     = static fn (string $f): string => isset($errors[$f]) ? '<div class="err">' . esc($errors[$f]) . '</div>' : '';
@@ -38,6 +39,9 @@ $kindKey = (string) ($campaign['kind'] ?? $values['kind'] ?? '');
 $kind    = $config->kinds[$kindKey] ?? null;
 $status  = (string) ($campaign['status'] ?? CampaignModel::STATUS_DRAFT);
 $isNew   = $campaign === null;
+$isSeq   = isset($kind['steps']);
+$seqKey  = (string) ($kind['sequence'] ?? '');
+$formSteps = is_array($values['steps'] ?? null) ? array_values($values['steps']) : [];
 $isDraft = $status === CampaignModel::STATUS_DRAFT;
 $canEdit = $isNew || in_array($status, [CampaignModel::STATUS_DRAFT, CampaignModel::STATUS_PAUSED], true);
 $action  = base_url($isNew ? 'admin/communications/new' : 'admin/communications/' . $campaign['id']);
@@ -49,6 +53,9 @@ $reasons = [
     'no_email'      => 'No email',
     'unpublished'   => 'No longer published',
     'left_audience' => 'Left the audience',
+    'paused'        => 'Paused',
+    'converted'     => 'Took Verified or Plus',
+    'no_step'       => 'No step left',
 ];
 ?>
 
@@ -70,7 +77,13 @@ $reasons = [
             </p>
 
             <div class="flex flex-wrap items-end gap-3">
-                <a class="btn btn-ghost" href="<?= base_url('admin/communications/' . $id . '/preview') ?>">Preview</a>
+                <?php if ($isSeq): ?>
+                    <?php foreach ($steps as $st): ?>
+                        <a class="btn btn-ghost" href="<?= base_url('admin/communications/' . $id . '/preview?step=' . (int) $st['step']) ?>">Preview email <?= (int) $st['step'] ?></a>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <a class="btn btn-ghost" href="<?= base_url('admin/communications/' . $id . '/preview') ?>">Preview</a>
+                <?php endif; ?>
 
                 <?php if ($canEdit): ?>
                     <form method="post" action="<?= base_url('admin/communications/' . $id . '/test') ?>" class="flex flex-wrap items-end gap-2">
@@ -92,7 +105,9 @@ $reasons = [
                         <span class="text-sm text-slate-500 dark:text-slate-400">Send yourself a test to unlock Start.</span>
                     <?php else: ?>
                         <form method="post" action="<?= base_url('admin/communications/' . $id . '/start') ?>"
-                              data-confirm="Queue <?= esc($num((int) $count), 'attr') ?> profiles and send up to <?= (int) $campaign['daily_limit'] ?> a day, starting with the next run? Each gets this email once.">
+                              data-confirm="<?= esc($seqKey === CommunicationsService::SEQUENCE_VERIFIED
+                                  ? 'Start the Verified sequence? Every imported profile claimed from now on joins it and gets its emails, up to ' . (int) $campaign['daily_limit'] . ' a day.'
+                                  : 'Queue ' . $num((int) $count) . ' profiles and send up to ' . (int) $campaign['daily_limit'] . ' a day, starting with the next run? ' . ($isSeq ? 'Each gets these ' . count($steps) . ' emails once, spaced out, until they claim.' : 'Each gets this email once.'), 'attr') ?>">
                             <?= csrf_field() ?>
                             <button type="submit" class="btn btn-primary">Start sending</button>
                         </form>
@@ -120,16 +135,28 @@ $reasons = [
 
         <?php if ($stats !== null && ! empty($campaign['started_at'])): ?>
             <dl class="stats-tiles mb-6">
-                <?php foreach (['Sent' => $stats['sent'], 'Sent today' => $stats['sentToday'], 'Queued' => $stats['queued'], 'Failed' => $stats['failed'], 'Skipped' => $stats['skipped'], 'Opted out since' => $stats['optedOutSince']] as $label => $n): ?>
+                <?php
+                $tiles = $isSeq
+                    ? ['Finished' => $stats['sent'], 'Sent today' => $stats['sentToday'], 'In the sequence' => $stats['queued'], 'Held (paused)' => $stats['held'], 'Failed' => $stats['failed'], 'Stopped' => $stats['skipped'], 'Opted out since' => $stats['optedOutSince']]
+                    : ['Sent' => $stats['sent'], 'Sent today' => $stats['sentToday'], 'Queued' => $stats['queued'], 'Failed' => $stats['failed'], 'Skipped' => $stats['skipped'], 'Opted out since' => $stats['optedOutSince']];
+                if ($isSeq) {
+                    foreach ($steps as $st) {
+                        $tiles['Email ' . $st['step'] . ' sent'] = $stats['perStep'][(int) $st['step']] ?? 0;
+                    }
+                    $tiles[$seqKey === CommunicationsService::SEQUENCE_CLAIM ? 'Claimed' : 'Took the plan'] = $stats['reasons'][$seqKey === CommunicationsService::SEQUENCE_CLAIM ? 'claimed' : 'converted'] ?? 0;
+                }
+                ?>
+                <?php foreach ($tiles as $label => $n): ?>
                     <div class="stats-tile">
                         <dt class="stats-tile-label"><?= esc($label) ?></dt>
                         <dd class="stats-tile-value"><?= $num((int) $n) ?></dd>
                     </div>
                 <?php endforeach; ?>
             </dl>
-            <?php if ($stats['reasons'] !== []): ?>
+            <?php if ($stats['reasons'] !== [] || $stats['medianDaysToClaim'] !== null): ?>
                 <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
-                    Skipped: <?= esc(implode(', ', array_map(static fn (string $r, int $n): string => ($reasons[$r] ?? $r) . ' ' . $n, array_keys($stats['reasons']), $stats['reasons']))) ?>.
+                    <?php if ($stats['medianDaysToClaim'] !== null): ?>Median <?= esc((string) $stats['medianDaysToClaim']) ?> days from the first email to the claim. <?php endif; ?>
+                    <?= $isSeq ? 'Stopped' : 'Skipped' ?>: <?= esc(implode(', ', array_map(static fn (string $r, int $n): string => ($reasons[$r] ?? $r) . ' ' . $n, array_keys($stats['reasons']), $stats['reasons']))) ?>.
                 </p>
             <?php endif; ?>
         <?php endif; ?>
@@ -158,6 +185,34 @@ $reasons = [
                     </div>
                 </div>
 
+                <?php if ($isSeq): ?>
+                    <?php foreach ($kind['steps'] as $i => $tpl): ?>
+                        <?php $st = $formSteps[$i] ?? ['subject' => $tpl['subject'], 'body' => implode("\n\n", $tpl['paragraphs']), 'delay_days' => $tpl['delay_days']]; $n = $i + 1; ?>
+                        <fieldset class="mb-6 rounded-surface border border-slate-200 p-4 dark:border-slate-700">
+                            <legend class="px-1 text-sm font-semibold text-slate-900 dark:text-white">Email <?= $n ?> · button: <?= esc($tpl['button'][0]) ?><?php if (! empty($tpl['stats'])): ?> · stats box (views, searches)<?php endif; ?><?php if (! empty($tpl['extras'])): ?> · links (co.za only): <?= esc(implode(', ', array_column($tpl['extras'], 0))) ?><?php endif; ?></legend>
+                            <div class="field">
+                                <label for="s<?= $n ?>-delay"><?= $n === 1 ? ($seqKey === CommunicationsService::SEQUENCE_VERIFIED ? 'Days after the claim' : 'Days after the start (0 = in the first batches)') : 'Days after email ' . ($n - 1) ?></label>
+                                <input type="number" id="s<?= $n ?>-delay" name="steps[<?= $i ?>][delay_days]" required min="<?= $n === 1 ? 0 : 1 ?>" max="<?= (int) $config->maxDelayDays ?>" value="<?= esc((string) $st['delay_days'], 'attr') ?>">
+                                <?= $err("steps.{$n}.delay_days") ?>
+                            </div>
+                            <div class="field">
+                                <label for="s<?= $n ?>-subject">Subject</label>
+                                <input type="text" id="s<?= $n ?>-subject" name="steps[<?= $i ?>][subject]" required maxlength="160" value="<?= esc((string) $st['subject'], 'attr') ?>">
+                                <?= $err("steps.{$n}.subject") ?>
+                            </div>
+                            <div class="field mb-0">
+                                <label for="s<?= $n ?>-body">Email</label>
+                                <textarea id="s<?= $n ?>-body" name="steps[<?= $i ?>][body]" rows="10" required maxlength="<?= CommunicationsService::MAX_BODY ?>"><?= esc((string) $st['body']) ?></textarea>
+                                <?= $err("steps.{$n}.body") ?>
+                            </div>
+                        </fieldset>
+                    <?php endforeach; ?>
+                    <div class="hint mb-5">
+                        Plain text, a blank line between paragraphs. Merge fields: <?= esc(implode(' ', CampaignRenderer::FIELDS)) ?>.
+                        {greeting} is "Dear" and the name for a profile that is one person, else "Hello,". {plan} is Verified on co.za and Plus on .app.
+                        Each email is checked again just before it goes: claimed, upgraded, opted out, paused or mailed in the last <?= (int) $config->recentContactDays ?> days.
+                    </div>
+                <?php else: ?>
                 <div class="field">
                     <label for="c-subject">Subject</label>
                     <input type="text" id="c-subject" name="subject" required maxlength="160" value="<?= esc($v('subject'), 'attr') ?>">
@@ -174,6 +229,7 @@ $reasons = [
                     </div>
                     <?= $err('body') ?>
                 </div>
+                <?php endif; ?>
 
                 <div class="mb-5">
                     <?= $this->include('admin/communications/_footer_preview') ?>
@@ -229,7 +285,7 @@ $reasons = [
         <h2 class="mb-2 text-base font-bold text-slate-900 dark:text-white">Latest in the send log</h2>
         <div class="tablewrap">
             <table class="table">
-                <thead><tr><th>Profile</th><th>Status</th><th>Tries</th><th>Sent</th></tr></thead>
+                <thead><tr><th>Profile</th><th>Status</th><?php if ($isSeq): ?><th>Emails sent</th><th>Next</th><?php endif; ?><th>Tries</th><th>Last sent</th><th>Profile emails</th></tr></thead>
                 <tbody>
                 <?php foreach ($log as $r): ?>
                     <tr>
@@ -240,8 +296,13 @@ $reasons = [
                                 <span class="text-xs text-slate-500 dark:text-slate-400"><?= esc($reasons[$r['reason']] ?? (string) $r['reason']) ?></span>
                             <?php endif; ?>
                         </td>
+                        <?php if ($isSeq): ?>
+                            <td><?= (int) $r['step'] ?> of <?= count($steps) ?></td>
+                            <td class="whitespace-nowrap text-sm"><?= $r['status'] === CampaignRecipientModel::STATUS_QUEUED ? (! empty($r['next_send_at']) ? esc(date('j M', strtotime((string) $r['next_send_at']))) : 'Next batch') : '' ?></td>
+                        <?php endif; ?>
                         <td><?= (int) $r['attempts'] ?></td>
                         <td class="whitespace-nowrap text-sm"><?= ! empty($r['sent_at']) ? esc(date('j M H:i', strtotime((string) $r['sent_at']))) : '' ?></td>
+                        <td><?= view('admin/communications/_pause_button', ['listingId' => (int) $r['listing_id'], 'paused' => ! empty($r['comms_paused_at']), 'back' => 'admin/communications/' . $id], ['saveData' => false]) ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

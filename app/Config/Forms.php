@@ -55,6 +55,7 @@ class Forms extends BaseConfig
         'verification'     => ['label' => 'Verified or Plus application', 'posts' => ['manage/verification' => 'business/badge', 'manage/verification/cancel' => 'business/badge', 'manage/verification/yearly' => 'business/badge', 'manage/verification/pay' => 'business/badge']],
         'preview'          => ['label' => 'Preview approval', 'posts' => ['preview/(:segment)/approve' => 'preview/$1', 'preview/(:segment)/changes' => 'preview/$1']],
         'newsletter'       => ['label' => 'Newsletter signup', 'posts' => ['newsletter' => 'newsletter'], 'pages' => ['newsletter']],
+        'claim'            => ['label' => 'Claim a profile', 'posts' => ['claim/(:segment)' => 'claim/$1', 'claim/(:segment)/report' => 'claim/$1', 'claim/(:segment)/remove' => 'claim/$1']],
         'newsletter_confirm' => ['label' => 'Newsletter confirm', 'posts' => ['newsletter/confirm/(:segment)' => 'newsletter/confirm/$1']],
         // Online bookings (docs/bookings/).
         'business_profile'  => ['label' => 'Edit profile (business area)', 'posts' => ['business/profile/(:segment)' => 'business/profile/$1', 'business/profile/photo-delete/(:num)' => 'business/profile/photos', 'business/profile/logo-delete' => 'business/profile/photos', 'business/profile/brand-delete/(:num)' => 'business/profile/photos']],
@@ -119,6 +120,7 @@ class Forms extends BaseConfig
         'csp-report',
         'payfast/notify',
         'paystack/webhook',
+        'hooks/ses',
         'book/payfast/notify',
         // The bookings API: JSON for programs, no page to send a failure back to.
         'api/v1/appointments',

@@ -499,8 +499,26 @@ is the only writer of `xs_campaigns` and `xs_campaign_recipients` (the send log)
   List-Unsubscribe-Post.
 - Preview of the real HTML is `admin/communications/{id}/raw`, its own locked CSP
   (`default-src 'none'`, `style-src 'unsafe-inline'`, sandbox).
+- **Sequences** (27 Nov 2026): kinds with `steps` (`claim_sequence` 0/4/6 days,
+  `verified_sequence` 2/5/7 days after a claim) store steps in `xs_campaign_steps`; a
+  recipient row stays `queued` between steps (`step`, own `next_send_at`). The Verified
+  sequence starts empty and enrols imports claimed since its start (`rows(..., $claimedSince)`),
+  closing their claim rows. Holds (row waits): `comms_paused_at` (admin Pause, or the owner's
+  report) and any address mailed in the last `$recentContactDays` (3). Every sent email is a
+  row in `xs_campaign_messages`; the daily limit counts those. Stop reasons add `converted`.
+- **Claim page** `/claim/{token}` (`Claim`, `ClaimService`), button target `claim`: GET only
+  shows (mail scanners open links), POSTs confirm / report / remove with CSRF. One token per
+  email, SHA-256 in `xs_campaign_messages.link_hash`, 14 days, refused once claimed. Never put
+  a sign in link (`/manage/{token}`) back on a claim email.
+- **Extra links** per step (`extras`: `demo_profile`, `demo_booking`, `doc:<key>`) render as a
+  "See it for yourself" box, co.za profiles only (Fernwood and both guides are South African);
+  `CampaignRenderer::extras()` drops anything missing. Admin edits wording, not links.
+- **Stats box**: a step with `stats` (A1, B1) shows 30 day views and times shown in searches
+  (own appearances + Google impressions), `CampaignRenderer::stats()`; zeros left out.
+- **SES bounces**: `POST /hooks/ses` (`SesNotificationService`), off until `ses.snsTopicArn`;
+  SNS signature + topic checked; hard bounce or complaint → `MarketingConsentService::suppress()`.
 - **No bulk send to production without the owner's OK**, the POPIA basis and an SES
-  quota check. Tests: `tests/database/CommunicationsTest.php`.
+  quota check. Tests: `CommunicationsTest.php`, `CampaignSequenceTest.php`.
 
 ## Newsletter (own list; Mautic is retired)
 

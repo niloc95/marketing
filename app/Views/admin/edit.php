@@ -361,6 +361,26 @@ if (! is_array($old['hours'] ?? null)) {
                         </form>
                     </div>
                 </div>
+
+                <?php // The owner replied to a campaign email: hold every campaign email until it is handled. ?>
+                <div class="panel flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-sm text-slate-600 dark:text-slate-300">
+                        <strong>Campaign emails.</strong>
+                        <?php if (! empty($listing['comms_opt_out_at'])): ?>
+                            Opted out <?= esc(local_datetime($listing['comms_opt_out_at'])) ?> (<?= esc((string) $listing['comms_opt_out_source']) ?>): no campaign reaches this profile.
+                        <?php elseif (! empty($listing['comms_paused_at'])): ?>
+                            Paused <?= esc(local_datetime($listing['comms_paused_at'])) ?>: <?= esc((string) $listing['comms_paused_note']) ?>
+                        <?php else: ?>
+                            Going as planned. Pause them when the owner replies, so no automatic email follows while you answer.
+                        <?php endif; ?>
+                        <?php if (! empty($listing['claimed_at'])): ?>
+                            <br><span class="text-xs text-slate-500 dark:text-slate-400">Claimed on the claim page <?= esc(local_datetime($listing['claimed_at'])) ?>.</span>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (empty($listing['comms_opt_out_at'])): ?>
+                        <?= view('admin/communications/_pause_button', ['listingId' => (int) $listing['id'], 'paused' => ! empty($listing['comms_paused_at']), 'back' => 'admin/edit/' . (int) $listing['id']], ['saveData' => false]) ?>
+                    <?php endif; ?>
+                </div>
         <?php endif; ?>
     </div>
     <?php endforeach; ?>

@@ -54,11 +54,13 @@ class CampaignAudience
     /**
      * The profiles a campaign would go to now, one per address, oldest first.
      * $campaignId leaves out profiles already in that campaign's log.
+     * $claimedSince keeps only imported profiles claimed at or after that
+     * time (the Verified sequence's joiners), each with `claimed_on`.
      *
      * @param array<string,mixed> $audience
-     * @return list<array<string,mixed>> listing rows, plus group_name
+     * @return list<array<string,mixed>> listing rows, plus group_name (and claimed_on)
      */
-    public function rows(array $audience, ?int $campaignId = null): array
+    public function rows(array $audience, ?int $campaignId = null, ?string $claimedSince = null): array
     {
         $audience = self::normalise($audience);
         if ($audience['segment'] === null) {
@@ -74,6 +76,15 @@ class CampaignAudience
             ->orderBy('l.id', 'ASC');
         $this->applySegment($builder, $audience['segment']);
         $this->applyFilters($builder, $audience);
+
+        if ($claimedSince !== null) {
+            $db      = db_connect();
+            $members = $db->prefixTable('business_members');
+            $claimed = "COALESCE(l.claimed_at, (SELECT MIN(m.created_at) FROM {$members} m WHERE m.listing_id = l.id AND m.status = 'active'))";
+            $builder->select($claimed . ' AS claimed_on', false)
+                ->where("l.signup_source LIKE 'import-%'", null, false)
+                ->where($claimed . ' >= ' . $db->escape($claimedSince), null, false);
+        }
 
         if ($campaignId !== null) {
             $builder->where('NOT EXISTS (SELECT 1 FROM ' . db_connect()->prefixTable('campaign_recipients')
@@ -124,12 +135,20 @@ class CampaignAudience
         if (isset($this->optedOutEmails()[$email])) {
             return 'opted_out';
         }
+        // After opted out: a profile that is both is told apart as opted out.
+        if (! empty($listing['comms_paused_at'])) {
+            return 'paused';
+        }
 
         $segment = self::normalise($audience)['segment'];
         $builder = $this->base()->select('l.id')->where('l.id', (int) $listing['id']);
         $this->applySegment($builder, (string) $segment);
         if ($builder->get()->getRowArray() === null) {
-            return $segment === 'unclaimed_imports' ? 'claimed' : 'left_audience';
+            return match (true) {
+                $segment === 'unclaimed_imports' => 'claimed',
+                $segment === 'free' && listing_has_premium($listing) => 'converted',
+                default => 'left_audience',
+            };
         }
 
         return null;

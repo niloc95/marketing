@@ -115,6 +115,13 @@ $routes->get('cookie-policy', 'Legal::cookies');
 // Marketing email opt-out. Top-level for the same reason. GET asks, POST acts —
 // see the Unsubscribe controller for why, and Config\Filters for the CSRF
 // exemption the POST needs.
+// The claim page a claim campaign email opens (ClaimService). GET only shows;
+// confirm, report and remove are POSTs from the page and keep CSRF.
+$routes->get('claim/(:segment)', 'Claim::show/$1');
+$routes->post('claim/(:segment)', 'Claim::confirm/$1');
+$routes->post('claim/(:segment)/report', 'Claim::report/$1');
+$routes->post('claim/(:segment)/remove', 'Claim::remove/$1');
+
 $routes->get('unsubscribe/(:segment)', 'Unsubscribe::confirm/$1');
 $routes->post('unsubscribe/(:segment)', 'Unsubscribe::apply/$1');
 
@@ -240,6 +247,9 @@ $routes->post('payfast/notify', 'PayFastNotify::index');
 // Paystack's webhook, for every payment it takes (PaystackWebhook). Exempt
 // like the two above; PaystackPayments' checks stand in for CSRF.
 $routes->post('paystack/webhook', 'PaystackWebhook::index');
+// Amazon SES bounce and complaint notices via SNS (SesNotificationService):
+// a hard bounce or a complaint opts the address out of every campaign.
+$routes->post('hooks/ses', 'SesHook::index');
 
 // Admin oversight
 $routes->get('admin/login', 'Admin::login');
@@ -652,6 +662,8 @@ $routes->group('admin', ['filter' => 'admin'], static function ($routes) {
     $routes->get('communications/(:num)/preview', 'AdminCommunications::preview/$1');
     $routes->get('communications/(:num)/raw', 'AdminCommunications::raw/$1');
     $routes->post('communications/(:num)/test', 'AdminCommunications::test/$1');
+    $routes->post('communications/profile/(:num)/pause', 'AdminCommunications::pauseProfile/$1');
+    $routes->post('communications/profile/(:num)/resume', 'AdminCommunications::resumeProfile/$1');
     $routes->post('communications/(:num)/start', 'AdminCommunications::start/$1');
     $routes->post('communications/(:num)/status', 'AdminCommunications::status/$1');
     // Online bookings across the platform (Phase 10, D12): counts and setup;

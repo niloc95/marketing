@@ -118,7 +118,7 @@ class Filters extends BaseFilters
             // failure mode if one were ever chosen that PayFast also sends is
             // subscriptions silently going unpaid while PayFast retries into a
             // 403 forever. Cheap to rule out.
-            'bottrap' => ['except' => ['payfast/notify', 'paystack/webhook', 'book/payfast/notify', 'api/v1/*']],
+            'bottrap' => ['except' => ['payfast/notify', 'paystack/webhook', 'hooks/ses', 'book/payfast/notify', 'api/v1/*']],
             // csp-report is exempt because a browser posting a violation report
             // has no CSRF token to send. Nothing is trusted from that endpoint —
             // it only writes a throttled, truncated log line (see Csp::report).
@@ -186,7 +186,9 @@ class Filters extends BaseFilters
             // key on every request (App\Filters\BookingApi). A browser cannot
             // add that header across sites without CORS, which we never grant,
             // so there is nothing for a forged request to ride on.
-            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'paystack/webhook', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'business/profile/*/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*', 'book/payfast/notify', 'api/v1/*']],
+            // hooks/ses: Amazon SNS posts bounce and complaint notices server
+            // to server; the SNS signature check in SesNotificationService stands in.
+            'csrf' => ['except' => ['csp-report', 'payfast/notify', 'paystack/webhook', 'hooks/ses', 'unsubscribe/*', 'add-profile/score', 'preview/*', 'manage/preview', 'business/profile/*/preview', 'discovery/opened', 'stats/tap', 'forms/event', 'newsletter', 'newsletter/unsubscribe/*', 'book/unsubscribe/*', 'book/payfast/notify', 'api/v1/*']],
             // Remembers a ?via= / ?invite= arrival for the visit. See the class.
             'signupchannel',
             // 'invalidchars',
@@ -214,7 +216,7 @@ class Filters extends BaseFilters
             // book/*/pay and book/customer/*/*/pay render the step before
             // PayFast for a booking deposit (book/pay.php): the same signed
             // form, so exempt for the same reason (Book::payDeposit()).
-            'honeypot' => ['except' => ['payfast/notify', 'paystack/webhook', 'manage/verification/checkout', 'manage/verification/yearly', 'book/payfast/notify', 'book/*/pay', 'book/customer/*/*/pay', 'api/v1/*']],
+            'honeypot' => ['except' => ['payfast/notify', 'paystack/webhook', 'hooks/ses', 'manage/verification/checkout', 'manage/verification/yearly', 'book/payfast/notify', 'book/*/pay', 'book/customer/*/*/pay', 'api/v1/*']],
             // Sets the Partner Program cookie for a ?ref= arrival. See the class.
             'partnerref',
             'secureheaders',
